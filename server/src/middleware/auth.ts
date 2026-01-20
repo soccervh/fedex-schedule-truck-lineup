@@ -1,9 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+// Fail fast if JWT_SECRET is not configured
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required but not set');
+}
+
 export interface AuthPayload {
   userId: string;
   role: 'MANAGER' | 'DRIVER' | 'SWING';
+}
+
+const VALID_ROLES = ['MANAGER', 'DRIVER', 'SWING'] as const;
+
+function isValidPayload(payload: unknown): payload is AuthPayload {
+  if (typeof payload !== 'object' || payload === null) {
+    return false;
+  }
+  const obj = payload as Record<string, unknown>;
+  return (
+    typeof obj.userId === 'string' &&
+    obj.userId.length > 0 &&
+    typeof obj.role === 'string' &&
+    VALID_ROLES.includes(obj.role as typeof VALID_ROLES[number])
+  );
 }
 
 export interface AuthRequest extends Request {
@@ -24,11 +45,13 @@ export function authenticate(
   const token = authHeader.substring(7);
 
   try {
-    const payload = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'fallback-secret'
-    ) as AuthPayload;
-    req.user = payload;
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!isValidPayload(decoded)) {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    req.user = decoded;
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid token' });
