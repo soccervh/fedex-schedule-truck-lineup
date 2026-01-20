@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MANAGER
+  DRIVER
+  SWING
+}
+
+enum HomeArea {
+  BELT
+  DOCK
+  UNLOAD
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  SCHEDULED_OFF
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String
+  phone     String?
+  role      Role
+  homeArea  HomeArea
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  assignments         Assignment[]
+  templateAssignments TemplateAssignment[]
+  timeOffRequests     TimeOff[]
+}
+
+model Belt {
+  id        Int      @id
+  name      String
+  spots     Spot[]
+}
+
+model Spot {
+  id        Int      @id @default(autoincrement())
+  number    Int
+  beltId    Int
+  belt      Belt     @relation(fields: [beltId], references: [id])
+
+  templateAssignments TemplateAssignment[]
+  assignments         Assignment[]
+
+  @@unique([beltId, number])
+}
+
+model TemplateAssignment {
+  id          String    @id @default(cuid())
+  spotId      Int
+  spot        Spot      @relation(fields: [spotId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  dayOfWeek   Int       // 0 = Sunday, 6 = Saturday
+  truckNumber String
+
+  @@unique([spotId, dayOfWeek])
+}
+
+model Assignment {
+  id          String    @id @default(cuid())
+  spotId      Int
+  spot        Spot      @relation(fields: [spotId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  date        DateTime  @db.Date
+  truckNumber String
+  isOverride  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([spotId, date])
+}
+
+model TimeOff {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  date      DateTime       @db.Date
+  type      TimeOffType
+  status    TimeOffStatus  @default(PENDING)
+  isImported Boolean       @default(false)
+  note      String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, date])
+}
