@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import peopleRoutes from './routes/people';
 import beltRoutes from './routes/belts';
+import assignmentRoutes from './routes/assignments';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/people', peopleRoutes);
 app.use('/api/belts', beltRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
