@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { hashPassword, comparePassword } from '../utils/password';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Fail fast if JWT_SECRET is not configured
 if (!process.env.JWT_SECRET) {

@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/password';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Get all people (managers only see all, drivers see limited)
 router.get('/', authenticate, async (req: AuthRequest, res) => {
