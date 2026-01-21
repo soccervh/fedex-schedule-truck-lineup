@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
+import { Lineup } from './pages/Lineup';
 
 const queryClient = new QueryClient();
 
@@ -37,7 +38,7 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <div>Lineup View (coming next)</div>
+            <Lineup />
           </ProtectedRoute>
         }
       />
