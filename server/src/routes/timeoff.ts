@@ -103,7 +103,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
 // Approve/deny time off (manager only)
 router.patch('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status, note } = req.body;
 
     if (!status || !['APPROVED', 'DENIED'].includes(status)) {

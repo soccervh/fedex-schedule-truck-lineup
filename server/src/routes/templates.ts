@@ -7,8 +7,8 @@ const router = Router();
 // Get template for a specific belt and day of week
 router.get('/belt/:beltId', authenticate, async (req, res) => {
   try {
-    const { beltId } = req.params;
-    const { dayOfWeek } = req.query;
+    const beltId = req.params.beltId as string;
+    const dayOfWeek = req.query.dayOfWeek as string | undefined;
 
     const whereClause: any = {
       spot: { beltId: parseInt(beltId) },
@@ -86,7 +86,8 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
 // Delete template assignment
 router.delete('/:spotId/:dayOfWeek', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
-    const { spotId, dayOfWeek } = req.params;
+    const spotId = req.params.spotId as string;
+    const dayOfWeek = req.params.dayOfWeek as string;
 
     await prisma.templateAssignment.delete({
       where: {

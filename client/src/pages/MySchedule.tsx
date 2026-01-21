@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 export function MySchedule() {
-  const { user } = useAuth();
+  useAuth(); // Ensure user is authenticated
   const queryClient = useQueryClient();
 
   const today = new Date();
