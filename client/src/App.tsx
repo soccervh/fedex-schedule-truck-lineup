@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Lineup } from './pages/Lineup';
+import { People } from './pages/People';
 
 const queryClient = new QueryClient();
 
@@ -46,7 +47,7 @@ function AppRoutes() {
         path="/people"
         element={
           <ProtectedRoute>
-            <div>People Management (coming soon)</div>
+            <People />
           </ProtectedRoute>
         }
       />
