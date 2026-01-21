@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import peopleRoutes from './routes/people';
 import beltRoutes from './routes/belts';
 import assignmentRoutes from './routes/assignments';
+import templateRoutes from './routes/templates';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/people', peopleRoutes);
 app.use('/api/belts', beltRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/templates', templateRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
