@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Lineup } from './pages/Lineup';
 import { People } from './pages/People';
 import { TimeOff } from './pages/TimeOff';
+import { MySchedule } from './pages/MySchedule';
 
 const queryClient = new QueryClient();
 
@@ -64,7 +65,7 @@ function AppRoutes() {
         path="/my-schedule"
         element={
           <ProtectedRoute>
-            <div>My Schedule (coming soon)</div>
+            <MySchedule />
           </ProtectedRoute>
         }
       />
