@@ -4,6 +4,24 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { BeltSelector } from '../components/BeltSelector';
 import { SpotGrid } from '../components/SpotGrid';
+import { AssignmentModal } from '../components/AssignmentModal';
+
+interface Spot {
+  id: number;
+  number: number;
+  assignment: {
+    id: string;
+    truckNumber: string;
+    isOverride: boolean;
+    user: {
+      id: string;
+      name: string;
+      homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+      role: 'DRIVER' | 'SWING' | 'MANAGER';
+    };
+    needsCoverage: boolean;
+  } | null;
+}
 
 export function Lineup() {
   const { isManager } = useAuth();
@@ -11,6 +29,7 @@ export function Lineup() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
 
   const { data: beltData, isLoading } = useQuery({
     queryKey: ['belt', selectedBelt, selectedDate],
@@ -30,10 +49,9 @@ export function Lineup() {
     },
   });
 
-  const handleSpotClick = (spot: any) => {
+  const handleSpotClick = (spot: Spot) => {
     if (!isManager) return;
-    // TODO: Open assignment modal
-    console.log('Clicked spot:', spot);
+    setSelectedSpot(spot);
   };
 
   const needsCoverageCount = coverageData?.needsCoverage?.length || 0;
@@ -99,6 +117,15 @@ export function Lineup() {
           <span>Swing</span>
         </div>
       </div>
+
+      {selectedSpot && (
+        <AssignmentModal
+          spot={selectedSpot}
+          beltId={selectedBelt}
+          date={selectedDate}
+          onClose={() => setSelectedSpot(null)}
+        />
+      )}
     </div>
   );
 }
