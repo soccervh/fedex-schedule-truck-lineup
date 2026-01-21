@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Lineup } from './pages/Lineup';
 import { People } from './pages/People';
+import { TimeOff } from './pages/TimeOff';
 
 const queryClient = new QueryClient();
 
@@ -55,7 +56,7 @@ function AppRoutes() {
         path="/timeoff"
         element={
           <ProtectedRoute>
-            <div>Time Off Management (coming soon)</div>
+            <TimeOff />
           </ProtectedRoute>
         }
       />
