@@ -99,6 +99,8 @@ router.get('/:beltId/assignments', authenticate, async (req, res) => {
     res.json({
       id: belt.id,
       name: belt.name,
+      letter: belt.letter,
+      baseNumber: belt.baseNumber,
       spots: spotsWithStatus,
     });
   } catch (error) {
