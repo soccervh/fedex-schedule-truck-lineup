@@ -8,11 +8,20 @@ const prisma = new PrismaClient({
 
 async function main() {
   // Create 4 belts with 32 spots each
-  for (let beltNum = 1; beltNum <= 4; beltNum++) {
+  const belts = [
+    { id: 1, name: 'A Belt', letter: 'A', baseNumber: 100 },
+    { id: 2, name: 'B Belt', letter: 'B', baseNumber: 200 },
+    { id: 3, name: 'C Belt', letter: 'C', baseNumber: 300 },
+    { id: 4, name: 'D Belt', letter: 'D', baseNumber: 400 },
+  ];
+
+  for (const belt of belts) {
     await prisma.belt.create({
       data: {
-        id: beltNum,
-        name: `Belt ${beltNum}`,
+        id: belt.id,
+        name: belt.name,
+        letter: belt.letter,
+        baseNumber: belt.baseNumber,
         spots: {
           create: Array.from({ length: 32 }, (_, i) => ({
             number: i + 1,

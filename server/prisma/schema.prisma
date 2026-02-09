@@ -48,9 +48,11 @@ model User {
 }
 
 model Belt {
-  id        Int      @id
-  name      String
-  spots     Spot[]
+  id         Int      @id
+  name       String
+  letter     String   // A, B, C, D
+  baseNumber Int      // 100, 200, 300, 400
+  spots      Spot[]
 }
 
 model Spot {
