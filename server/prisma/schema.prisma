@@ -13,9 +13,10 @@ enum Role {
 }
 
 enum HomeArea {
-  BELT
+  FO
   DOCK
   UNLOAD
+  PULLER
 }
 
 enum TimeOffStatus {
@@ -42,9 +43,10 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  assignments         Assignment[]
-  templateAssignments TemplateAssignment[]
-  timeOffRequests     TimeOff[]
+  assignments          Assignment[]
+  templateAssignments  TemplateAssignment[]
+  timeOffRequests      TimeOff[]
+  facilityAssignments  FacilityAssignment[]
 }
 
 model Belt {
@@ -107,4 +109,38 @@ model TimeOff {
   updatedAt DateTime       @updatedAt
 
   @@unique([userId, date])
+}
+
+// Facility areas beyond belts (Unload, Doc sections)
+model FacilityArea {
+  id       Int            @id @default(autoincrement())
+  name     String         // "UNLOAD", "DOC"
+  subArea  String?        // "Secondary", "Quarterback", "Fine Sort", "Ramp", etc.
+  spots    FacilitySpot[]
+}
+
+model FacilitySpot {
+  id       Int              @id @default(autoincrement())
+  areaId   Int
+  area     FacilityArea     @relation(fields: [areaId], references: [id])
+  number   Int
+  label    String?          // "QB1", "Ramp1", etc.
+  side     String?          // "DC" or "BA" for unload spots
+
+  assignments FacilityAssignment[]
+
+  @@unique([areaId, number])
+}
+
+model FacilityAssignment {
+  id             String       @id @default(cuid())
+  facilitySpotId Int
+  facilitySpot   FacilitySpot @relation(fields: [facilitySpotId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  date           DateTime     @db.Date
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([facilitySpotId, date])
 }

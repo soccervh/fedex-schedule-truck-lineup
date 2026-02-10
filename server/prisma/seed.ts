@@ -33,6 +33,114 @@ async function main() {
 
   console.log('Seeded 4 belts with 32 spots each');
 
+  // Create facility areas: UNLOAD and DOC
+  // UNLOAD - D/C Side (3 spots)
+  const unloadDC = await prisma.facilityArea.create({
+    data: {
+      name: 'UNLOAD',
+      subArea: 'D/C Side',
+      spots: {
+        create: [
+          { number: 1, side: 'DC' },
+          { number: 2, side: 'DC' },
+          { number: 3, side: 'DC' },
+        ],
+      },
+    },
+  });
+
+  // UNLOAD - B/A Side (3 spots)
+  const unloadBA = await prisma.facilityArea.create({
+    data: {
+      name: 'UNLOAD',
+      subArea: 'B/A Side',
+      spots: {
+        create: [
+          { number: 4, side: 'BA' },
+          { number: 5, side: 'BA' },
+          { number: 6, side: 'BA' },
+        ],
+      },
+    },
+  });
+
+  console.log('Seeded UNLOAD areas (6 spots total)');
+
+  // DOC - Secondary (8 spots, numbered 8 down to 1)
+  const docSecondary = await prisma.facilityArea.create({
+    data: {
+      name: 'DOC',
+      subArea: 'Secondary',
+      spots: {
+        create: Array.from({ length: 8 }, (_, i) => ({
+          number: 8 - i,
+          label: `S${8 - i}`,
+        })),
+      },
+    },
+  });
+
+  // DOC - Quarterback Upper (2 spots)
+  const docQBUpper = await prisma.facilityArea.create({
+    data: {
+      name: 'DOC',
+      subArea: 'Quarterback Upper',
+      spots: {
+        create: [
+          { number: 1, label: 'QB1' },
+          { number: 2, label: 'QB2' },
+        ],
+      },
+    },
+  });
+
+  // DOC - Fine Sort (8 spots, numbered 1-8)
+  const docFineSort = await prisma.facilityArea.create({
+    data: {
+      name: 'DOC',
+      subArea: 'Fine Sort',
+      spots: {
+        create: Array.from({ length: 8 }, (_, i) => ({
+          number: i + 1,
+          label: `FS${i + 1}`,
+        })),
+      },
+    },
+  });
+
+  // DOC - Quarterback Lower + Ramps (1 QB + 2 Ramps)
+  const docQBLower = await prisma.facilityArea.create({
+    data: {
+      name: 'DOC',
+      subArea: 'Quarterback Lower',
+      spots: {
+        create: [
+          { number: 1, label: 'QB1' },
+          { number: 2, label: 'Ramp1' },
+          { number: 3, label: 'Ramp2' },
+        ],
+      },
+    },
+  });
+
+  console.log('Seeded DOC areas (21 spots total)');
+
+  // FO - 20 spots (in the center between belt groups)
+  await prisma.facilityArea.create({
+    data: {
+      name: 'FO',
+      subArea: null,
+      spots: {
+        create: Array.from({ length: 20 }, (_, i) => ({
+          number: i + 1,
+          label: `FO${i + 1}`,
+        })),
+      },
+    },
+  });
+
+  console.log('Seeded FO area (20 spots)');
+
   // Create admin manager user
   const hashedPassword = await bcrypt.hash('admin123', 10);
   await prisma.user.create({
@@ -41,7 +149,7 @@ async function main() {
       password: hashedPassword,
       name: 'Admin Manager',
       role: 'MANAGER',
-      homeArea: 'BELT',
+      homeArea: 'FO',
     },
   });
 

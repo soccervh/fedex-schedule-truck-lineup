@@ -1,5 +1,7 @@
 import { calculateRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
 
+type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+
 interface SpotAssignment {
   id: string;
   truckNumber: string;
@@ -7,10 +9,11 @@ interface SpotAssignment {
   user: {
     id: string;
     name: string;
-    homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER';
   };
   needsCoverage: boolean;
+  originalUserHomeArea?: HomeArea;
 }
 
 interface SpotCardCompactProps {
@@ -23,10 +26,11 @@ interface SpotCardCompactProps {
   isManager: boolean;
 }
 
-const areaColors = {
-  BELT: 'bg-belt',
+const areaColors: Record<HomeArea, string> = {
+  FO: 'bg-fo',
   DOCK: 'bg-dock',
   UNLOAD: 'bg-unload',
+  PULLER: 'bg-puller',
 };
 
 export function SpotCardCompact({
@@ -41,11 +45,27 @@ export function SpotCardCompact({
   const routeNumber = calculateRouteNumber(baseNumber, spotNumber);
   const spotName = formatSpotName(beltLetter, spotNumber);
 
+  const isSwingFilling = assignment?.user.role === 'SWING' && assignment?.originalUserHomeArea;
+
   const getBackgroundClass = () => {
     if (!assignment) return 'bg-gray-50 border-dashed';
     if (assignment.needsCoverage) return 'bg-red-100 border-red-400 border-2';
+    if (isSwingFilling) return 'split-color text-white';
     if (assignment.user.role === 'SWING') return 'bg-swing text-white';
     return `${areaColors[assignment.user.homeArea]} text-white`;
+  };
+
+  const getSplitStyle = () => {
+    if (!isSwingFilling || !assignment?.originalUserHomeArea) return {};
+    const colorMap: Record<HomeArea, string> = {
+      FO: '#3B82F6',
+      DOCK: '#F97316',
+      UNLOAD: '#22C55E',
+      PULLER: '#EAB308',
+    };
+    return {
+      background: `linear-gradient(135deg, #6B7280 50%, ${colorMap[assignment.originalUserHomeArea]} 50%)`,
+    };
   };
 
   return (
@@ -59,6 +79,7 @@ export function SpotCardCompact({
       className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
+      style={getSplitStyle()}
     >
       <div className="flex justify-between items-center text-xs font-medium opacity-90">
         <span>{spotName}</span>

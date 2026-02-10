@@ -1,5 +1,7 @@
 import { calculateRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
 
+type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+
 interface SpotAssignment {
   id: string;
   truckNumber: string;
@@ -7,10 +9,11 @@ interface SpotAssignment {
   user: {
     id: string;
     name: string;
-    homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER';
   };
   needsCoverage: boolean;
+  originalUserHomeArea?: HomeArea;
 }
 
 interface TimeOffInfo {
@@ -28,16 +31,18 @@ interface SpotCardDetailedProps {
   isManager: boolean;
 }
 
-const areaColors = {
-  BELT: 'bg-belt',
+const areaColors: Record<HomeArea, string> = {
+  FO: 'bg-fo',
   DOCK: 'bg-dock',
   UNLOAD: 'bg-unload',
+  PULLER: 'bg-puller',
 };
 
-const areaLabels = {
-  BELT: 'Belt',
+const areaLabels: Record<HomeArea, string> = {
+  FO: 'FO',
   DOCK: 'Dock',
   UNLOAD: 'Unload',
+  PULLER: 'Puller',
 };
 
 export function SpotCardDetailed({

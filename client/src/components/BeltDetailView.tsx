@@ -1,5 +1,7 @@
 import { SpotCardDetailed } from './SpotCardDetailed';
 
+type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+
 interface Spot {
   id: number;
   number: number;
@@ -10,10 +12,11 @@ interface Spot {
     user: {
       id: string;
       name: string;
-      homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER';
     };
     needsCoverage: boolean;
+    originalUserHomeArea?: HomeArea;
   } | null;
 }
 

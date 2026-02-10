@@ -7,7 +7,9 @@ import { BeltDetailView } from '../components/BeltDetailView';
 import { NeedsFillSidebar } from '../components/NeedsFillSidebar';
 import { AssignmentModal } from '../components/AssignmentModal';
 
-interface Spot {
+type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+
+interface BeltSpot {
   id: number;
   number: number;
   assignment: {
@@ -17,10 +19,11 @@ interface Spot {
     user: {
       id: string;
       name: string;
-      homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER';
     };
     needsCoverage: boolean;
+    originalUserHomeArea?: HomeArea;
   } | null;
 }
 
@@ -29,7 +32,31 @@ interface Belt {
   name: string;
   letter: string;
   baseNumber: number;
-  spots: Spot[];
+  spots: BeltSpot[];
+}
+
+interface FacilitySpot {
+  id: number;
+  number: number;
+  label?: string;
+  side?: string;
+  assignment: {
+    id: string;
+    user: {
+      id: string;
+      name: string;
+      homeArea: HomeArea;
+      role: 'DRIVER' | 'SWING' | 'MANAGER';
+    };
+    needsCoverage?: boolean;
+    originalUserHomeArea?: HomeArea;
+  } | null;
+}
+
+interface FacilityArea {
+  name: string;
+  subArea: string | null;
+  spots: FacilitySpot[];
 }
 
 export function Lineup() {
@@ -38,10 +65,10 @@ export function Lineup() {
     new Date().toISOString().split('T')[0]
   );
   const [detailBeltId, setDetailBeltId] = useState<number | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<{ spot: Spot; beltId: number } | null>(null);
+  const [selectedBeltSpot, setSelectedBeltSpot] = useState<{ spot: BeltSpot; beltId: number } | null>(null);
 
   // Fetch all belts with assignments
-  const { data: beltsData, isLoading } = useQuery({
+  const { data: beltsData, isLoading: beltsLoading } = useQuery({
     queryKey: ['all-belts', selectedDate],
     queryFn: async () => {
       const beltsRes = await api.get('/belts');
@@ -66,6 +93,15 @@ export function Lineup() {
     },
   });
 
+  // Fetch facility areas with assignments
+  const { data: facilityAreasData, isLoading: facilityLoading } = useQuery({
+    queryKey: ['facility-areas', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/facility/areas?date=${selectedDate}`);
+      return res.data as Record<string, FacilityArea>;
+    },
+  });
+
   const { data: coverageData } = useQuery({
     queryKey: ['coverage', selectedDate],
     queryFn: async () => {
@@ -74,9 +110,15 @@ export function Lineup() {
     },
   });
 
-  const handleSpotClick = (spot: Spot, beltId: number) => {
+  const handleBeltSpotClick = (spot: BeltSpot, beltId: number) => {
     if (!isManager) return;
-    setSelectedSpot({ spot, beltId });
+    setSelectedBeltSpot({ spot, beltId });
+  };
+
+  const handleFacilitySpotClick = (spot: FacilitySpot) => {
+    if (!isManager) return;
+    // TODO: Implement facility spot modal
+    console.log('Facility spot clicked:', spot);
   };
 
   const handleBeltDoubleClick = (beltId: number) => {
@@ -91,11 +133,12 @@ export function Lineup() {
     const belt = beltsData?.find((b) => b.id === beltId);
     const spot = belt?.spots.find((s) => s.id === spotId);
     if (spot && belt) {
-      setSelectedSpot({ spot, beltId: belt.id });
+      setSelectedBeltSpot({ spot, beltId: belt.id });
     }
   };
 
   const detailBelt = detailBeltId ? beltsData?.find((b) => b.id === detailBeltId) : null;
+  const isLoading = beltsLoading || facilityLoading;
 
   return (
     <div className="flex h-[calc(100vh-120px)]">
@@ -117,7 +160,7 @@ export function Lineup() {
           <div className="flex-1 flex items-center justify-center text-gray-500">
             Loading...
           </div>
-        ) : beltsData ? (
+        ) : beltsData && facilityAreasData ? (
           <div className="flex-1 overflow-hidden bg-white rounded-lg shadow p-4">
             {detailBelt ? (
               <BeltDetailView
@@ -125,14 +168,16 @@ export function Lineup() {
                 beltLetter={detailBelt.letter}
                 baseNumber={detailBelt.baseNumber}
                 spots={detailBelt.spots}
-                onSpotClick={(spot) => handleSpotClick(spot, detailBelt.id)}
+                onSpotClick={(spot) => handleBeltSpotClick(spot, detailBelt.id)}
                 onBack={handleBackToFacility}
                 isManager={isManager}
               />
             ) : (
               <FacilityView
                 belts={beltsData}
-                onSpotClick={handleSpotClick}
+                facilityAreas={facilityAreasData}
+                onBeltSpotClick={handleBeltSpotClick}
+                onFacilitySpotClick={handleFacilitySpotClick}
                 onBeltDoubleClick={handleBeltDoubleClick}
                 isManager={isManager}
               />
@@ -145,10 +190,10 @@ export function Lineup() {
         )}
 
         {/* Legend */}
-        <div className="flex gap-4 text-sm mt-4">
+        <div className="flex gap-4 text-sm mt-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-belt"></div>
-            <span>Belt</span>
+            <div className="w-4 h-4 rounded bg-fo"></div>
+            <span>FO</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-dock"></div>
@@ -157,6 +202,10 @@ export function Lineup() {
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-unload"></div>
             <span>Unload</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-puller"></div>
+            <span>Puller</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-swing"></div>
@@ -176,12 +225,12 @@ export function Lineup() {
       />
 
       {/* Modal */}
-      {selectedSpot && (
+      {selectedBeltSpot && (
         <AssignmentModal
-          spot={selectedSpot.spot}
-          beltId={selectedSpot.beltId}
+          spot={selectedBeltSpot.spot}
+          beltId={selectedBeltSpot.beltId}
           date={selectedDate}
-          onClose={() => setSelectedSpot(null)}
+          onClose={() => setSelectedBeltSpot(null)}
         />
       )}
     </div>

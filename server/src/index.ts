@@ -8,6 +8,7 @@ import beltRoutes from './routes/belts';
 import assignmentRoutes from './routes/assignments';
 import templateRoutes from './routes/templates';
 import timeoffRoutes from './routes/timeoff';
+import facilityRoutes from './routes/facility';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +27,7 @@ app.use('/api/belts', beltRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/timeoff', timeoffRoutes);
+app.use('/api/facility', facilityRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
