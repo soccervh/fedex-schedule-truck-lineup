@@ -1,6 +1,12 @@
 import { SpotCardCompact } from './SpotCardCompact';
 
-type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
+
+interface TruckData {
+  id: number;
+  number: string;
+  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+}
 
 interface Spot {
   id: number;
@@ -18,6 +24,10 @@ interface Spot {
     needsCoverage: boolean;
     originalUserHomeArea?: HomeArea;
   } | null;
+  truckAssignment?: {
+    id: string;
+    truck: TruckData;
+  } | null;
 }
 
 interface BeltColumnProps {
@@ -29,6 +39,8 @@ interface BeltColumnProps {
   onSpotClick: (spot: Spot) => void;
   onSpotDoubleClick: (beltId: number) => void;
   isManager: boolean;
+  onTruckDrop?: (spot: Spot, truckNumber: string) => void;
+  isDragEnabled?: boolean;
 }
 
 export function BeltColumn({
@@ -40,6 +52,8 @@ export function BeltColumn({
   onSpotClick,
   onSpotDoubleClick,
   isManager,
+  onTruckDrop,
+  isDragEnabled = false,
 }: BeltColumnProps) {
   // Sort spots by number (1 at top/north, 32 at bottom/south)
   const sortedSpots = [...spots].sort((a, b) => a.number - b.number);
@@ -57,9 +71,12 @@ export function BeltColumn({
             beltLetter={beltLetter}
             baseNumber={baseNumber}
             assignment={spot.assignment}
+            truckAssignment={spot.truckAssignment}
             onClick={() => onSpotClick(spot)}
             onDoubleClick={() => onSpotDoubleClick(beltId)}
             isManager={isManager}
+            isDragEnabled={isDragEnabled}
+            onTruckDrop={onTruckDrop ? (truckNumber) => onTruckDrop(spot, truckNumber) : undefined}
           />
         ))}
       </div>

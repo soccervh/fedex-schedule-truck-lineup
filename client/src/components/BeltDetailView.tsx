@@ -1,6 +1,6 @@
 import { SpotCardDetailed } from './SpotCardDetailed';
 
-type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
 interface Spot {
   id: number;
@@ -54,7 +54,7 @@ export function BeltDetailView({
         <h2 className="text-xl font-semibold">{beltName}</h2>
       </div>
 
-      <div className="text-center text-sm text-gray-500 mb-2">NORTH</div>
+      <div className="text-center text-sm text-gray-500 mb-2">WEST</div>
 
       <div className="flex-1 overflow-y-auto space-y-2 px-2">
         {sortedSpots.map((spot) => (
@@ -70,7 +70,7 @@ export function BeltDetailView({
         ))}
       </div>
 
-      <div className="text-center text-sm text-gray-500 mt-2">SOUTH</div>
+      <div className="text-center text-sm text-gray-500 mt-2">EAST</div>
     </div>
   );
 }

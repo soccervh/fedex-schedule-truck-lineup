@@ -1,6 +1,6 @@
 import { calculateRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
 
-type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
 interface SpotAssignment {
   id: string;
@@ -33,14 +33,14 @@ interface SpotCardDetailedProps {
 
 const areaColors: Record<HomeArea, string> = {
   FO: 'bg-fo',
-  DOCK: 'bg-dock',
+  DOC: 'bg-doc',
   UNLOAD: 'bg-unload',
   PULLER: 'bg-puller',
 };
 
 const areaLabels: Record<HomeArea, string> = {
   FO: 'FO',
-  DOCK: 'Dock',
+  DOC: 'Doc',
   UNLOAD: 'Unload',
   PULLER: 'Puller',
 };

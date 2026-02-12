@@ -1,10 +1,13 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient({
-  accelerateUrl: process.env.DATABASE_URL,
-});
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Create 4 belts with 32 spots each
@@ -154,6 +157,26 @@ async function main() {
   });
 
   console.log('Created admin user (email: admin@fedex.com, password: admin123)');
+
+  // Create sample trucks
+  const trucks = [
+    { number: 'T101', status: 'AVAILABLE' as const },
+    { number: 'T102', status: 'AVAILABLE' as const },
+    { number: 'T103', status: 'AVAILABLE' as const },
+    { number: 'T104', status: 'ASSIGNED' as const },
+    { number: 'T105', status: 'ASSIGNED' as const },
+    { number: 'T106', status: 'OUT_OF_SERVICE' as const, note: 'Engine repair' },
+    { number: 'T107', status: 'OUT_OF_SERVICE' as const, note: 'Brake issue' },
+    { number: 'T201', status: 'AVAILABLE' as const },
+    { number: 'T202', status: 'ASSIGNED' as const },
+    { number: 'T203', status: 'AVAILABLE' as const },
+  ];
+
+  for (const truck of trucks) {
+    await prisma.truck.create({ data: truck });
+  }
+
+  console.log('Seeded 10 trucks');
 }
 
 main()

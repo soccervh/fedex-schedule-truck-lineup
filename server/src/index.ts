@@ -9,6 +9,7 @@ import assignmentRoutes from './routes/assignments';
 import templateRoutes from './routes/templates';
 import timeoffRoutes from './routes/timeoff';
 import facilityRoutes from './routes/facility';
+import truckRoutes from './routes/trucks';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,7 +29,8 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/timeoff', timeoffRoutes);
 app.use('/api/facility', facilityRoutes);
+app.use('/api/trucks', truckRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

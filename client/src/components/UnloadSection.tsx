@@ -1,4 +1,4 @@
-type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
 interface FacilitySpotAssignment {
   id: string;
@@ -29,7 +29,7 @@ interface UnloadSectionProps {
 
 const areaColors: Record<HomeArea, string> = {
   FO: 'bg-fo',
-  DOCK: 'bg-dock',
+  DOC: 'bg-doc',
   UNLOAD: 'bg-unload',
   PULLER: 'bg-puller',
 };
@@ -57,7 +57,7 @@ function UnloadSpotCard({
     if (!isSwingFilling || !spot.assignment?.originalUserHomeArea) return {};
     const colorMap: Record<HomeArea, string> = {
       FO: '#3B82F6',
-      DOCK: '#F97316',
+      DOC: '#F97316',
       UNLOAD: '#22C55E',
       PULLER: '#EAB308',
     };

@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { PersonModal } from '../components/PersonModal';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
-const areaLabels = { BELT: 'Belt', DOCK: 'Dock', UNLOAD: 'Unload' };
+const areaLabels = { BELT: 'Belt', DOC: 'Doc', UNLOAD: 'Unload' };
 const roleLabels = { DRIVER: 'Driver', SWING: 'Swing', MANAGER: 'Manager' };
 
 export function People() {
@@ -83,7 +83,7 @@ export function People() {
         >
           <option value="">All Areas</option>
           <option value="BELT">Belt</option>
-          <option value="DOCK">Dock</option>
+          <option value="DOC">Doc</option>
           <option value="UNLOAD">Unload</option>
         </select>
       </div>

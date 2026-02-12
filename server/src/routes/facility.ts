@@ -156,7 +156,7 @@ router.post('/assignments', authenticate, async (req, res) => {
 // Delete facility assignment
 router.delete('/assignments/:assignmentId', authenticate, async (req, res) => {
   try {
-    const { assignmentId } = req.params;
+    const assignmentId = req.params.assignmentId as string;
 
     await prisma.facilityAssignment.delete({
       where: { id: assignmentId },

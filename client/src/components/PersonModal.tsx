@@ -9,7 +9,7 @@ interface Person {
   email: string;
   phone?: string;
   role: 'DRIVER' | 'SWING' | 'MANAGER';
-  homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+  homeArea: 'BELT' | 'DOC' | 'UNLOAD';
 }
 
 interface PersonModalProps {
@@ -154,7 +154,7 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
                 className="w-full px-3 py-2 border rounded-md"
               >
                 <option value="BELT">Belt</option>
-                <option value="DOCK">Dock</option>
+                <option value="DOC">Doc</option>
                 <option value="UNLOAD">Unload</option>
               </select>
             </div>

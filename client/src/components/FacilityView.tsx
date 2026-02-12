@@ -3,7 +3,7 @@ import { UnloadSection } from './UnloadSection';
 import { DocSection } from './DocSection';
 import { FOColumn } from './FOColumn';
 
-type HomeArea = 'FO' | 'DOCK' | 'UNLOAD' | 'PULLER';
+type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
 interface BeltSpot {
   id: number;
@@ -112,7 +112,7 @@ export function FacilityView({
       {/* BELTS Section */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex-1">
         <div className="text-center font-semibold text-gray-800 mb-3">BELTS</div>
-        <div className="text-center text-sm text-gray-500 mb-2">NORTH</div>
+        <div className="text-center text-sm text-gray-500 mb-2">WEST</div>
 
         <div className="flex gap-4 justify-center overflow-x-auto pb-4">
           {/* Left side: D Belt, C Belt */}
@@ -157,7 +157,7 @@ export function FacilityView({
           </div>
         </div>
 
-        <div className="text-center text-sm text-gray-500 mt-2">SOUTH</div>
+        <div className="text-center text-sm text-gray-500 mt-2">EAST</div>
       </div>
     </div>
   );

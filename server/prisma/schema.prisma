@@ -14,7 +14,7 @@ enum Role {
 
 enum HomeArea {
   FO
-  DOCK
+  DOC
   UNLOAD
   PULLER
 }
@@ -29,6 +29,12 @@ enum TimeOffType {
   VACATION
   SICK
   SCHEDULED_OFF
+}
+
+enum TruckStatus {
+  AVAILABLE
+  ASSIGNED
+  OUT_OF_SERVICE
 }
 
 model User {
@@ -63,8 +69,10 @@ model Spot {
   beltId    Int
   belt      Belt     @relation(fields: [beltId], references: [id])
 
-  templateAssignments TemplateAssignment[]
-  assignments         Assignment[]
+  templateAssignments  TemplateAssignment[]
+  assignments          Assignment[]
+  homeTrucks           Truck[]
+  truckAssignments     TruckSpotAssignment[]
 
   @@unique([beltId, number])
 }
@@ -143,4 +151,31 @@ model FacilityAssignment {
   updatedAt      DateTime     @updatedAt
 
   @@unique([facilitySpotId, date])
+}
+
+model Truck {
+  id              Int                   @id @default(autoincrement())
+  number          String                @unique
+  status          TruckStatus           @default(AVAILABLE)
+  homeSpotId      Int?
+  homeSpot        Spot?                 @relation(fields: [homeSpotId], references: [id])
+  note            String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  spotAssignments TruckSpotAssignment[]
+}
+
+// Independent truck-to-spot assignment (separate from driver assignments)
+model TruckSpotAssignment {
+  id        String   @id @default(cuid())
+  spotId    Int
+  spot      Spot     @relation(fields: [spotId], references: [id])
+  truckId   Int
+  truck     Truck    @relation(fields: [truckId], references: [id])
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([spotId, date])
+  @@unique([truckId, date])
 }

@@ -7,7 +7,7 @@ interface User {
   email: string;
   name: string;
   role: 'MANAGER' | 'DRIVER' | 'SWING';
-  homeArea: 'BELT' | 'DOCK' | 'UNLOAD';
+  homeArea: 'BELT' | 'DOC' | 'UNLOAD';
 }
 
 interface AuthContextType {

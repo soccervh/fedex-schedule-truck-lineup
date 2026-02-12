@@ -63,6 +63,38 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
   }
 });
 
+// Update assignment truck number
+router.patch('/:id/truck', authenticate, requireManager, async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+    const { truckNumber } = req.body;
+
+    if (!truckNumber) {
+      return res.status(400).json({ error: 'Truck number is required' });
+    }
+
+    const assignment = await prisma.assignment.update({
+      where: { id },
+      data: { truckNumber, isOverride: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            homeArea: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    res.json(assignment);
+  } catch (error) {
+    console.error('Update assignment truck error:', error);
+    res.status(500).json({ error: 'Failed to update assignment truck' });
+  }
+});
+
 // Delete assignment (reset to unassigned)
 router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
