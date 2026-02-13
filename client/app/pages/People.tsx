@@ -5,7 +5,6 @@ import { api } from '../lib/api';
 import { PersonModal } from '../components/PersonModal';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
-const areaLabels: Record<string, string> = { FO: 'FO', DOC: 'Doc', UNLOAD: 'Unload', PULLER: 'Puller', UNASSIGNED: 'Unassigned' };
 const roleLabels: Record<string, string> = { DRIVER: 'Driver', SWING: 'Swing', MANAGER: 'Manager', CSA: 'CSA', HANDLER: 'Handler' };
 
 export default function People() {
@@ -13,7 +12,6 @@ export default function People() {
   const [showModal, setShowModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<any>(null);
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
-  const [homeArea, setHomeArea] = useQueryState('homeArea', { defaultValue: '' });
 
   const { data: people, isLoading } = useQuery({
     queryKey: ['people'],
@@ -34,7 +32,6 @@ export default function People() {
 
   const filteredPeople = people?.filter((p: any) => {
     if (role && p.role !== role) return false;
-    if (homeArea && p.homeArea !== homeArea) return false;
     return true;
   });
 
@@ -80,18 +77,6 @@ export default function People() {
           <option value="CSA">CSA</option>
           <option value="HANDLER">Handler</option>
         </select>
-        <select
-          value={homeArea}
-          onChange={(e) => setHomeArea(e.target.value)}
-          className="px-3 py-2 border rounded-md"
-        >
-          <option value="">All Areas</option>
-          <option value="FO">FO</option>
-          <option value="DOC">Doc</option>
-          <option value="UNLOAD">Unload</option>
-          <option value="PULLER">Puller</option>
-          <option value="UNASSIGNED">Unassigned</option>
-        </select>
       </div>
 
       {isLoading ? (
@@ -109,9 +94,6 @@ export default function People() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Home Area
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Actions
@@ -137,9 +119,6 @@ export default function People() {
                     }`}>
                       {roleLabels[person.role] || person.role}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {areaLabels[person.homeArea] || person.homeArea}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <button

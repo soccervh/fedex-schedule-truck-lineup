@@ -9,7 +9,6 @@ interface Person {
   email: string;
   phone?: string;
   role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
-  homeArea: 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 }
 
 interface PersonModalProps {
@@ -27,7 +26,6 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
     phone: person?.phone || '',
     password: '',
     role: person?.role || 'DRIVER',
-    homeArea: person?.homeArea || 'UNASSIGNED',
   });
 
   const createMutation = useMutation({
@@ -129,39 +127,21 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="DRIVER">Driver</option>
-                <option value="SWING">Swing Driver</option>
-                <option value="MANAGER">Manager</option>
-                <option value="CSA">CSA</option>
-                <option value="HANDLER">Handler</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Secondary Role
-              </label>
-              <select
-                value={formData.homeArea}
-                onChange={(e) => setFormData({ ...formData, homeArea: e.target.value as any })}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="UNASSIGNED">Unassigned</option>
-                <option value="FO">FO</option>
-                <option value="DOC">Doc</option>
-                <option value="UNLOAD">Unload</option>
-                <option value="PULLER">Puller</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="DRIVER">Driver</option>
+              <option value="SWING">Swing Driver</option>
+              <option value="MANAGER">Manager</option>
+              <option value="CSA">CSA</option>
+              <option value="HANDLER">Handler</option>
+            </select>
           </div>
 
           <button
