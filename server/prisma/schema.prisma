@@ -40,6 +40,13 @@ enum TruckStatus {
   OUT_OF_SERVICE
 }
 
+enum RouteArea {
+  EO_POOL
+  UNLOAD
+  DOCK
+  BELT_SPOT
+}
+
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
@@ -77,6 +84,7 @@ model Spot {
   assignments          Assignment[]
   homeTrucks           Truck[]
   truckAssignments     TruckSpotAssignment[]
+  routes               Route[]
 
   @@unique([beltId, number])
 }
@@ -182,4 +190,25 @@ model TruckSpotAssignment {
 
   @@unique([spotId, date])
   @@unique([truckId, date])
+}
+
+model Route {
+  id           Int       @id @default(autoincrement())
+  number       String    @unique
+  assignedArea RouteArea
+  beltSpotId   Int?
+  beltSpot     Spot?     @relation(fields: [beltSpotId], references: [id])
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model DailyBriefing {
+  id           String   @id @default(cuid())
+  date         DateTime @unique @db.Date
+  startTime    String?
+  planeArrival String?
+  lateFreight  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
