@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { Home } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,8 +14,10 @@ export function AppLayout({ children }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Facility', show: true },
+    { path: '/', label: 'Home', show: true },
+    { path: '/facility', label: 'Facility', show: true },
     { path: '/truck-lineup', label: 'Truck Lineup', show: true },
+    { path: '/routes', label: 'Routes', show: isManager },
     { path: '/people', label: 'People', show: isManager },
     { path: '/timeoff', label: 'Time Off', show: isManager },
     { path: '/my-schedule', label: 'My Schedule', show: !isManager },
@@ -25,9 +28,14 @@ export function AppLayout({ children }: LayoutProps) {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center py-3">
-            <h1 className="text-lg font-bold text-gray-900 shrink-0">
-              FedEx Truck Lineup
-            </h1>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link to="/" className="text-gray-600 hover:text-blue-600">
+                <Home size={22} />
+              </Link>
+              <h1 className="text-lg font-bold text-gray-900">
+                FedEx
+              </h1>
+            </div>
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6">
