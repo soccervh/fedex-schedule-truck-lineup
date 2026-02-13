@@ -10,6 +10,8 @@ enum Role {
   MANAGER
   DRIVER
   SWING
+  CSA
+  HANDLER
 }
 
 enum HomeArea {
@@ -17,6 +19,7 @@ enum HomeArea {
   DOC
   UNLOAD
   PULLER
+  UNASSIGNED
 }
 
 enum TimeOffStatus {
@@ -64,10 +67,11 @@ model Belt {
 }
 
 model Spot {
-  id        Int      @id @default(autoincrement())
-  number    Int
-  beltId    Int
-  belt      Belt     @relation(fields: [beltId], references: [id])
+  id            Int      @id @default(autoincrement())
+  number        Int
+  beltId        Int
+  belt          Belt     @relation(fields: [beltId], references: [id])
+  routeOverride Int?
 
   templateAssignments  TemplateAssignment[]
   assignments          Assignment[]

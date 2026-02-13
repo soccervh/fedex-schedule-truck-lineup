@@ -199,16 +199,20 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
 
     const targetDate = new Date(date as string);
 
-    // Get all assignments for this date
-    const assignments = await prisma.assignment.findMany({
-      where: { date: targetDate },
+    // Get all belt spots with their assignments for this date
+    const allSpots = await prisma.spot.findMany({
       include: {
-        user: true,
-        spot: {
-          include: { belt: true },
+        belt: true,
+        assignments: {
+          where: { date: targetDate },
+          include: { user: true },
         },
       },
+      orderBy: [{ belt: { id: 'asc' } }, { number: 'asc' }],
     });
+
+    // Get all assignments for this date (for swing driver tracking)
+    const assignments = allSpots.flatMap(s => s.assignments);
 
     // Get approved time offs for assigned users
     const userIds = assignments.map(a => a.userId);
@@ -222,15 +226,27 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
 
     const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
 
-    // Find spots needing coverage
-    const needsCoverage = assignments
-      .filter(a => timeOffUserIds.has(a.userId))
-      .map(a => ({
-        assignment: a,
-        spot: a.spot,
-        belt: a.spot.belt,
-        user: a.user,
-      }));
+    // Find spots needing coverage: unassigned OR assigned user is off
+    const needsCoverage: any[] = [];
+    for (const spot of allSpots) {
+      const assignment = spot.assignments[0];
+      if (!assignment) {
+        // Unassigned spot
+        needsCoverage.push({
+          spot: { id: spot.id, number: spot.number, belt: spot.belt },
+          user: { name: 'Unassigned' },
+          reason: 'unassigned',
+        });
+      } else if (timeOffUserIds.has(assignment.userId)) {
+        // Assigned user is off
+        needsCoverage.push({
+          assignment,
+          spot: { id: spot.id, number: spot.number, belt: spot.belt },
+          user: assignment.user,
+          reason: 'time_off',
+        });
+      }
+    }
 
     // Get available swing drivers
     const swingDrivers = await prisma.user.findMany({

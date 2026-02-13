@@ -9,7 +9,7 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
   try {
     const { spotId, userId, date, truckNumber } = req.body;
 
-    if (!spotId || !userId || !date || !truckNumber) {
+    if (!spotId || !userId || !date) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -23,9 +23,11 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
       },
     });
 
+    const effectiveTruckNumber = truckNumber || '';
+
     const isOverride = templateAssignment
       ? templateAssignment.userId !== userId ||
-        templateAssignment.truckNumber !== truckNumber
+        templateAssignment.truckNumber !== effectiveTruckNumber
       : false;
 
     const assignment = await prisma.assignment.upsert({
@@ -34,14 +36,14 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
       },
       update: {
         userId,
-        truckNumber,
+        truckNumber: effectiveTruckNumber,
         isOverride,
       },
       create: {
         spotId,
         userId,
         date: targetDate,
-        truckNumber,
+        truckNumber: effectiveTruckNumber,
         isOverride,
       },
       include: {

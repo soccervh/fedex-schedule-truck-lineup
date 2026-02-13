@@ -96,6 +96,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
         return {
           id: spot.id,
           number: spot.number,
+          routeOverride: spot.routeOverride,
           assignment: assignment
             ? {
                 id: assignment.id,
@@ -185,6 +186,7 @@ router.get('/:beltId/assignments', authenticate, async (req, res) => {
       return {
         id: spot.id,
         number: spot.number,
+        routeOverride: spot.routeOverride,
         assignment: assignment
           ? {
               id: assignment.id,

@@ -9,10 +9,10 @@ const JWT_SECRET: string = process.env.JWT_SECRET;
 
 export interface AuthPayload {
   userId: string;
-  role: 'MANAGER' | 'DRIVER' | 'SWING';
+  role: 'MANAGER' | 'DRIVER' | 'SWING' | 'CSA' | 'HANDLER';
 }
 
-const VALID_ROLES = ['MANAGER', 'DRIVER', 'SWING'] as const;
+const VALID_ROLES = ['MANAGER', 'DRIVER', 'SWING', 'CSA', 'HANDLER'] as const;
 
 function isValidPayload(payload: unknown): payload is AuthPayload {
   if (typeof payload !== 'object' || payload === null) {

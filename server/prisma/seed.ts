@@ -69,6 +69,43 @@ async function main() {
 
   console.log('Seeded UNLOAD areas (6 spots total)');
 
+  // SORT - B/A Side (2 Label Facers, 2 Scanners, 2 Splitters)
+  await prisma.facilityArea.create({
+    data: {
+      name: 'SORT',
+      subArea: 'B/A Side',
+      spots: {
+        create: [
+          { number: 1, label: 'LF1', side: 'BA' },
+          { number: 2, label: 'LF2', side: 'BA' },
+          { number: 3, label: 'SC1', side: 'BA' },
+          { number: 4, label: 'SC2', side: 'BA' },
+          { number: 5, label: 'SP1', side: 'BA' },
+          { number: 6, label: 'SP2', side: 'BA' },
+        ],
+      },
+    },
+  });
+
+  // SORT - D/C Side (1 Label Facer, 2 Scanners, 2 Splitters)
+  await prisma.facilityArea.create({
+    data: {
+      name: 'SORT',
+      subArea: 'D/C Side',
+      spots: {
+        create: [
+          { number: 1, label: 'LF1', side: 'DC' },
+          { number: 2, label: 'SC1', side: 'DC' },
+          { number: 3, label: 'SC2', side: 'DC' },
+          { number: 4, label: 'SP1', side: 'DC' },
+          { number: 5, label: 'SP2', side: 'DC' },
+        ],
+      },
+    },
+  });
+
+  console.log('Seeded SORT areas (11 spots total)');
+
   // DOC - Secondary (8 spots, numbered 8 down to 1)
   const docSecondary = await prisma.facilityArea.create({
     data: {
@@ -118,7 +155,7 @@ async function main() {
       subArea: 'Quarterback Lower',
       spots: {
         create: [
-          { number: 1, label: 'QB1' },
+          { number: 1, label: 'QB3' },
           { number: 2, label: 'Ramp1' },
           { number: 3, label: 'Ramp2' },
         ],
@@ -157,6 +194,156 @@ async function main() {
   });
 
   console.log('Created admin user (email: admin@fedex.com, password: admin123)');
+
+  // Create drivers (FO home area - belt drivers)
+  const driverNames = [
+    'Mike Johnson', 'Steve Williams', 'Dave Brown', 'Tom Davis', 'Chris Miller',
+    'James Wilson', 'Robert Moore', 'John Taylor', 'Rick Anderson', 'Dan Thomas',
+    'Matt Jackson', 'Kevin White', 'Brian Harris', 'Jeff Martin', 'Scott Garcia',
+    'Mark Martinez', 'Paul Robinson', 'Eric Clark', 'Greg Rodriguez', 'Tim Lewis',
+    'Jason Lee', 'Ryan Walker', 'Josh Hall', 'Andy Allen', 'Nick Young',
+    'Tony Hernandez', 'Joe King', 'Frank Wright', 'Sam Lopez', 'Ben Hill',
+    'Larry Scott', 'Carl Green', 'Ray Adams', 'Don Baker', 'Phil Nelson',
+    'Wayne Carter', 'Dale Mitchell', 'Roger Perez', 'Keith Roberts', 'Ralph Turner',
+    'Roy Phillips', 'Eugene Campbell', 'Russell Parker', 'Louis Evans', 'Harry Edwards',
+    'Fred Collins', 'Albert Stewart', 'Howard Sanchez', 'Victor Morris', 'Ernest Rogers',
+    'Jesse Reed', 'Arthur Cook', 'Leonard Morgan', 'Oscar Bell', 'Martin Murphy',
+    'Tommy Bailey', 'Gerald Rivera', 'Herbert Cooper', 'Floyd Richardson', 'Lloyd Cox',
+    'Clyde Howard', 'Glen Ward', 'Dean Torres', 'Norman Peterson', 'Alfred Gray',
+    'Leo Ramirez', 'Leroy James', 'Elmer Watson', 'Floyd Brooks', 'Cecil Kelly',
+    'Clarence Sanders', 'Vernon Price', 'Edgar Bennett', 'Milton Wood', 'Claude Barnes',
+    'Lester Ross', 'Melvin Henderson', 'Clifford Coleman', 'Edgar Jenkins', 'Max Perry',
+    'Hugh Powell', 'Willis Long', 'Homer Patterson', 'Sherman Hughes', 'Virgil Flores',
+    'Horace Washington', 'Edmund Butler', 'Felix Simmons', 'Stuart Foster', 'Harvey Gonzales',
+    'Gordon Bryant', 'Sidney Alexander', 'Wilbur Russell', 'Morris Griffin', 'Gilbert Diaz',
+    'Roland Hayes', 'Irving Myers', 'Forrest Ford', 'Chester Hamilton', 'Rudolph Graham',
+    'Dewey Sullivan', 'Irving Wallace', 'Archie West', 'Roman Cole', 'Otis Lucas',
+    'Emmett Owens', 'Grover Burns', 'Rufus Stone', 'Alonzo Gordon', 'Conrad Hart',
+    'Luther Fox', 'Isaac Palmer', 'Boris Weber', 'Jasper Kelley', 'Herman Sanders',
+    'Elbert Newman', 'Myron Rhodes', 'Oliver Nichols', 'Marshall Dixon', 'Percy Hunt',
+  ];
+
+  // Distribute drivers across secondary roles
+  const driverAreas: Array<'FO' | 'DOC' | 'UNLOAD' | 'PULLER'> = [];
+  for (let i = 0; i < driverNames.length; i++) {
+    if (i < 70) driverAreas.push('FO');
+    else if (i < 90) driverAreas.push('DOC');
+    else if (i < 105) driverAreas.push('UNLOAD');
+    else driverAreas.push('PULLER');
+  }
+
+  const drivers: { id: string }[] = [];
+  for (let i = 0; i < driverNames.length; i++) {
+    const driver = await prisma.user.create({
+      data: {
+        email: `driver${i + 1}@fedex.com`,
+        password: hashedPassword,
+        name: driverNames[i],
+        role: 'DRIVER',
+        homeArea: driverAreas[i],
+      },
+    });
+    drivers.push(driver);
+  }
+  console.log(`Created ${drivers.length} drivers`);
+
+  // Create swing drivers with varied secondary roles
+  const swingNames = [
+    'Carlos Mendez', 'Derek Shaw', 'Eddie Cruz', 'Felix Ortiz',
+    'Hank Reeves', 'Ivan Wolfe', 'Jake Dunn', 'Kyle Bates',
+  ];
+  const swingAreas: Array<'FO' | 'DOC' | 'UNLOAD' | 'PULLER'> = [
+    'FO', 'FO', 'DOC', 'DOC', 'UNLOAD', 'UNLOAD', 'PULLER', 'FO',
+  ];
+  const swingDrivers: { id: string }[] = [];
+  for (let i = 0; i < swingNames.length; i++) {
+    const swing = await prisma.user.create({
+      data: {
+        email: `swing${i + 1}@fedex.com`,
+        password: hashedPassword,
+        name: swingNames[i],
+        role: 'SWING',
+        homeArea: swingAreas[i],
+      },
+    });
+    swingDrivers.push(swing);
+  }
+  console.log(`Created ${swingDrivers.length} swing drivers`);
+
+  // Create CSA users
+  const csaNames = ['Lisa Chen', 'Maria Gonzalez', 'Sarah Kim'];
+  for (let i = 0; i < csaNames.length; i++) {
+    await prisma.user.create({
+      data: {
+        email: `csa${i + 1}@fedex.com`,
+        password: hashedPassword,
+        name: csaNames[i],
+        role: 'CSA',
+        homeArea: 'UNASSIGNED',
+      },
+    });
+  }
+  console.log(`Created ${csaNames.length} CSA users`);
+
+  // Create Handler users
+  const handlerNames = ['Pete Marshall', 'Vince Torres', 'Will Chambers', 'Alex Duran'];
+  const handlerAreas: Array<'UNLOAD' | 'UNASSIGNED'> = ['UNLOAD', 'UNLOAD', 'UNASSIGNED', 'UNASSIGNED'];
+  for (let i = 0; i < handlerNames.length; i++) {
+    await prisma.user.create({
+      data: {
+        email: `handler${i + 1}@fedex.com`,
+        password: hashedPassword,
+        name: handlerNames[i],
+        role: 'HANDLER',
+        homeArea: handlerAreas[i],
+      },
+    });
+  }
+  console.log(`Created ${handlerNames.length} Handler users`);
+
+  // Assign drivers to belt spots for today
+  // Use the same date creation as the API: parse from date string = UTC midnight
+  const todayStr = new Date().toISOString().split('T')[0];
+  const today = new Date(todayStr);
+
+  const allSpots = await prisma.spot.findMany({
+    orderBy: [{ beltId: 'asc' }, { number: 'asc' }],
+  });
+
+  // Assign 120 of 128 spots (leave 8 unassigned, 2 per belt)
+  let driverIndex = 0;
+  for (let i = 0; i < allSpots.length; i++) {
+    // Skip spots 31 and 32 on each belt (leave them empty)
+    const spotNumber = allSpots[i].number;
+    if (spotNumber >= 31) continue;
+
+    if (driverIndex >= drivers.length) break;
+
+    await prisma.assignment.create({
+      data: {
+        spotId: allSpots[i].id,
+        userId: drivers[driverIndex].id,
+        date: today,
+        truckNumber: '',
+      },
+    });
+    driverIndex++;
+  }
+  console.log(`Created ${driverIndex} assignments for today`);
+
+  // Add a few time-off entries so some assigned people show as needing coverage
+  const timeOffDrivers = drivers.slice(0, 5); // First 5 drivers
+  for (const driver of timeOffDrivers) {
+    await prisma.timeOff.create({
+      data: {
+        userId: driver.id,
+        date: today,
+        type: 'SCHEDULED_OFF',
+        status: 'APPROVED',
+      },
+    });
+  }
+  console.log(`Created ${timeOffDrivers.length} time-off entries for today`);
 
   // Create sample trucks
   const trucks = [
