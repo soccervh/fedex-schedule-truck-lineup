@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { X, Truck } from 'lucide-react';
-import { calculateRouteNumber, getEffectiveRouteNumber } from '../utils/belt';
 
 interface Spot {
   id: number;
@@ -36,12 +35,6 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     spot.assignment?.user.id || ''
   );
 
-  const defaultRoute = baseNumber != null ? calculateRouteNumber(baseNumber, spot.number) : null;
-  const effectiveRoute = baseNumber != null ? getEffectiveRouteNumber(baseNumber, spot.number, spot.routeOverride) : null;
-  const [routeOverrideInput, setRouteOverrideInput] = useState(
-    spot.routeOverride != null ? String(spot.routeOverride) : ''
-  );
-
   const { data: people } = useQuery({
     queryKey: ['people'],
     queryFn: async () => {
@@ -54,6 +47,22 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     queryKey: ['swing-drivers'],
     queryFn: async () => {
       const res = await api.get('/people/swing');
+      return res.data;
+    },
+  });
+
+  const { data: spotRoutes } = useQuery({
+    queryKey: ['spot-routes', spot.id],
+    queryFn: async () => {
+      const res = await api.get(`/routes/by-spot/${spot.id}`);
+      return res.data;
+    },
+  });
+
+  const { data: allRoutes } = useQuery({
+    queryKey: ['routes'],
+    queryFn: async () => {
+      const res = await api.get('/routes');
       return res.data;
     },
   });
@@ -82,13 +91,23 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     },
   });
 
-  const routeOverrideMutation = useMutation({
-    mutationFn: async (data: { routeOverride: number | null }) => {
-      return api.patch(`/spots/${spot.id}/route-override`, data);
+  const loadLocationMutation = useMutation({
+    mutationFn: async ({ routeId, loadLocation }: { routeId: number; loadLocation: string | null }) => {
+      return api.patch(`/routes/${routeId}/load-location`, { loadLocation });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['belt', beltId, date] });
-      queryClient.invalidateQueries({ queryKey: ['all-belts', date] });
+      queryClient.invalidateQueries({ queryKey: ['spot-routes', spot.id] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+    },
+  });
+
+  const assignRouteMutation = useMutation({
+    mutationFn: async ({ routeId, spotId }: { routeId: number; spotId: number }) => {
+      return api.put('/routes/assign-to-spot', { routeId, spotId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spot-routes', spot.id] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
     },
   });
 
@@ -107,19 +126,6 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     if (spot.assignment) {
       deleteMutation.mutate(spot.assignment.id);
     }
-  };
-
-  const handleSaveRouteOverride = () => {
-    const val = routeOverrideInput.trim();
-    if (!val) return;
-    const num = parseInt(val, 10);
-    if (isNaN(num)) return;
-    routeOverrideMutation.mutate({ routeOverride: num });
-  };
-
-  const handleResetRouteOverride = () => {
-    setRouteOverrideInput('');
-    routeOverrideMutation.mutate({ routeOverride: null });
   };
 
   const handleSwapTruck = () => {
@@ -142,49 +148,59 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Route Override Section */}
-          {baseNumber != null && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Route Number</span>
-                <span className="text-sm text-gray-500">
-                  Default: {defaultRoute}
-                  {spot.routeOverride != null && (
-                    <span className="ml-2 text-blue-600 font-medium">
-                      Current: {effectiveRoute}
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={routeOverrideInput}
-                  onChange={(e) => setRouteOverrideInput(e.target.value)}
-                  placeholder={String(defaultRoute)}
-                  className="flex-1 px-3 py-1.5 border rounded-md text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleSaveRouteOverride}
-                  disabled={routeOverrideMutation.isPending || !routeOverrideInput.trim()}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Save
-                </button>
-                {spot.routeOverride != null && (
-                  <button
-                    type="button"
-                    onClick={handleResetRouteOverride}
-                    disabled={routeOverrideMutation.isPending}
-                    className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-md hover:bg-gray-100"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
+          {/* Route Section */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Route</label>
+              <select
+                value={spotRoutes?.[0]?.id || ''}
+                onChange={(e) => {
+                  const routeId = parseInt(e.target.value);
+                  if (!routeId) return;
+                  const selected = allRoutes?.find((r: any) => r.id === routeId);
+                  if (selected?.beltSpotId && selected.beltSpotId !== spot.id) {
+                    if (!confirm(`Route ${selected.number} is already assigned to another spot. Move it here?`)) {
+                      return;
+                    }
+                  }
+                  assignRouteMutation.mutate({ routeId, spotId: spot.id });
+                }}
+                className="w-full px-2 py-1.5 border rounded text-sm"
+                disabled={assignRouteMutation.isPending}
+              >
+                <option value="">No route assigned</option>
+                {allRoutes?.map((route: any) => (
+                  <option key={route.id} value={route.id}>
+                    R:{route.number}{route.beltSpotId && route.beltSpotId !== spot.id ? ' (on another spot)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+            {spotRoutes?.[0] && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Area</label>
+                <select
+                  value={spotRoutes[0].loadLocation || ''}
+                  onChange={(e) => loadLocationMutation.mutate({
+                    routeId: spotRoutes[0].id,
+                    loadLocation: e.target.value || null,
+                  })}
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  disabled={loadLocationMutation.isPending}
+                >
+                  <option value="">No Area</option>
+                  <option value="UNASSIGNED">Unassigned</option>
+                  <option value="DOC">Doc</option>
+                  <option value="UNLOAD">Unload</option>
+                  <option value="LABEL_FACER">Label Facer</option>
+                  <option value="SCANNER">Scanner</option>
+                  <option value="SPLITTER">Splitter</option>
+                  <option value="FO">FO</option>
+                  <option value="PULLER">Puller</option>
+                </select>
+              </div>
+            )}
+          </div>
 
           {/* Swap Truck Button */}
           <button
@@ -212,9 +228,8 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                required
               >
-                <option value="">Select person...</option>
+                <option value="">No person assigned</option>
                 {spot.assignment?.needsCoverage ? (
                   swingDrivers?.map((driver: any) => (
                     <option key={driver.id} value={driver.id}>
@@ -234,10 +249,10 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                disabled={assignMutation.isPending}
+                disabled={assignMutation.isPending || !selectedUserId}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {assignMutation.isPending ? 'Saving...' : 'Save Assignment'}
+                {assignMutation.isPending ? 'Saving...' : selectedUserId ? 'Assign Person' : 'Select a person to assign'}
               </button>
               {spot.assignment && !spot.assignment.needsCoverage && (
                 <button

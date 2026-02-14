@@ -207,6 +207,11 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
           where: { date: targetDate },
           include: { user: true },
         },
+        routes: {
+          where: { isActive: true },
+          select: { id: true, number: true, loadLocation: true },
+          orderBy: { number: 'asc' },
+        },
       },
       orderBy: [{ belt: { id: 'asc' } }, { number: 'asc' }],
     });
@@ -230,10 +235,12 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
     const needsCoverage: any[] = [];
     for (const spot of allSpots) {
       const assignment = spot.assignments[0];
+      const route = spot.routes[0] || null;
       if (!assignment) {
         // Unassigned spot
         needsCoverage.push({
           spot: { id: spot.id, number: spot.number, belt: spot.belt },
+          route,
           user: { name: 'Unassigned' },
           reason: 'unassigned',
         });
@@ -242,6 +249,7 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
         needsCoverage.push({
           assignment,
           spot: { id: spot.id, number: spot.number, belt: spot.belt },
+          route,
           user: assignment.user,
           reason: 'time_off',
         });

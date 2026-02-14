@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getEffectiveRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
+import { formatSpotName } from '../utils/belt';
 
 type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 
@@ -26,11 +26,18 @@ interface TruckAssignment {
   };
 }
 
+interface SpotRoute {
+  id: number;
+  number: string;
+  loadLocation?: string | null;
+}
+
 interface SpotCardCompactProps {
   spotNumber: number;
   beltLetter: string;
   baseNumber: number;
   routeOverride?: number | null;
+  route?: SpotRoute | null;
   assignment: SpotAssignment | null;
   truckAssignment?: TruckAssignment | null;
   onClick: () => void;
@@ -54,6 +61,7 @@ export function SpotCardCompact({
   beltLetter,
   baseNumber,
   routeOverride,
+  route,
   assignment,
   truckAssignment,
   onClick,
@@ -64,7 +72,7 @@ export function SpotCardCompact({
   showTruckInHeader = false,
 }: SpotCardCompactProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const routeNumber = getEffectiveRouteNumber(baseNumber, spotNumber, routeOverride);
+  const routeDisplay = route ? `R:${route.number}` : '—';
   const spotName = formatSpotName(beltLetter, spotNumber);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -140,7 +148,7 @@ export function SpotCardCompact({
     >
       <div className="flex justify-between items-center text-xs font-medium opacity-90">
         <span>{spotName}</span>
-        <span>{showTruckInHeader ? (truckNumber ? `T:${truckNumber}` : '—') : formatRouteDisplay(routeNumber)}</span>
+        <span>{showTruckInHeader ? (truckNumber ? `T:${truckNumber}` : '—') : routeDisplay}</span>
       </div>
       {assignment ? (
         <>

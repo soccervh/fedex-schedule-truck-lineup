@@ -28,7 +28,7 @@ router.get('/', authenticate, async (req, res) => {
 // Create route (manager only)
 router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
-    const { number, assignedArea, beltSpotId } = req.body;
+    const { number, assignedArea, beltSpotId, loadLocation } = req.body;
 
     if (!number || !assignedArea) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -48,6 +48,7 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
         number,
         assignedArea,
         beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
+        loadLocation: loadLocation || null,
       },
       include: {
         beltSpot: {
@@ -65,11 +66,55 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
   }
 });
 
+// Get routes for a specific belt spot
+router.get('/by-spot/:spotId', authenticate, async (req, res) => {
+  try {
+    const spotId = parseInt(req.params.spotId as string);
+    const routes = await prisma.route.findMany({
+      where: { beltSpotId: spotId, isActive: true },
+      orderBy: { number: 'asc' },
+    });
+    res.json(routes);
+  } catch (error) {
+    console.error('Get routes by spot error:', error);
+    res.status(500).json({ error: 'Failed to get routes for spot' });
+  }
+});
+
+// Assign a route to a spot (manager only)
+// Unlinks any existing route from that spot first
+router.put('/assign-to-spot', authenticate, requireManager, async (req: AuthRequest, res) => {
+  try {
+    const { routeId, spotId } = req.body;
+
+    if (!routeId || !spotId) {
+      return res.status(400).json({ error: 'routeId and spotId are required' });
+    }
+
+    // Unlink any route currently on this spot
+    await prisma.route.updateMany({
+      where: { beltSpotId: spotId },
+      data: { beltSpotId: null, assignedArea: 'EO_POOL' },
+    });
+
+    // Assign the new route to this spot
+    const route = await prisma.route.update({
+      where: { id: routeId },
+      data: { beltSpotId: spotId, assignedArea: 'BELT_SPOT' },
+    });
+
+    res.json(route);
+  } catch (error) {
+    console.error('Assign route to spot error:', error);
+    res.status(500).json({ error: 'Failed to assign route to spot' });
+  }
+});
+
 // Update route (manager only)
 router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id as string);
-    const { number, assignedArea, beltSpotId } = req.body;
+    const { number, assignedArea, beltSpotId, loadLocation } = req.body;
 
     if (assignedArea === 'BELT_SPOT' && !beltSpotId) {
       return res.status(400).json({ error: 'Belt spot required when area is BELT_SPOT' });
@@ -81,6 +126,7 @@ router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) =
         number,
         assignedArea,
         beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
+        loadLocation: loadLocation || null,
       },
       include: {
         beltSpot: {
@@ -112,6 +158,24 @@ router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res
   } catch (error) {
     console.error('Deactivate route error:', error);
     res.status(500).json({ error: 'Failed to deactivate route' });
+  }
+});
+
+// Update route load location (manager only)
+router.patch('/:id/load-location', authenticate, requireManager, async (req: AuthRequest, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    const { loadLocation } = req.body;
+
+    const route = await prisma.route.update({
+      where: { id },
+      data: { loadLocation: loadLocation || null },
+    });
+
+    res.json(route);
+  } catch (error) {
+    console.error('Update load location error:', error);
+    res.status(500).json({ error: 'Failed to update load location' });
   }
 });
 

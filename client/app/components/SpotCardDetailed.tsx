@@ -1,4 +1,4 @@
-import { calculateRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
+import { formatSpotName } from '../utils/belt';
 
 type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 
@@ -21,10 +21,17 @@ interface TimeOffInfo {
   note?: string;
 }
 
+interface SpotRoute {
+  id: number;
+  number: string;
+  loadLocation?: string | null;
+}
+
 interface SpotCardDetailedProps {
   spotNumber: number;
   beltLetter: string;
   baseNumber: number;
+  route?: SpotRoute | null;
   assignment: SpotAssignment | null;
   timeOffInfo?: TimeOffInfo;
   onClick: () => void;
@@ -51,12 +58,13 @@ export function SpotCardDetailed({
   spotNumber,
   beltLetter,
   baseNumber,
+  route,
   assignment,
   timeOffInfo,
   onClick,
   isManager,
 }: SpotCardDetailedProps) {
-  const routeNumber = calculateRouteNumber(baseNumber, spotNumber);
+  const routeDisplay = route ? `R:${route.number}` : '—';
   const spotName = formatSpotName(beltLetter, spotNumber);
 
   const getBackgroundClass = () => {
@@ -86,7 +94,7 @@ export function SpotCardDetailed({
       <div className="flex-1">
         <div className="flex justify-between items-start">
           <div className="font-semibold text-gray-900">
-            {spotName} {formatRouteDisplay(routeNumber)}
+            {spotName} {routeDisplay}
           </div>
           {assignment?.needsCoverage && (
             <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded font-medium">

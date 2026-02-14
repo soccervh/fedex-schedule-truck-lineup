@@ -4,11 +4,15 @@ import { api } from '../lib/api';
 import { RouteModal } from '../components/RouteModal';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
-const areaLabels: Record<string, string> = {
-  EO_POOL: 'EO Pool',
+const assignAreaLabels: Record<string, string> = {
+  UNASSIGNED: 'Unassigned',
+  DOC: 'Doc',
   UNLOAD: 'Unload',
-  DOCK: 'Dock',
-  BELT_SPOT: 'Belt Spot',
+  LABEL_FACER: 'Label Facer',
+  SCANNER: 'Scanner',
+  SPLITTER: 'Splitter',
+  FO: 'FO',
+  PULLER: 'Puller',
 };
 
 export default function Routes() {
@@ -49,13 +53,6 @@ export default function Routes() {
     setEditingRoute(null);
   };
 
-  const getAreaDisplay = (route: any) => {
-    if (route.assignedArea === 'BELT_SPOT' && route.beltSpot) {
-      return `Belt ${route.beltSpot.belt.letter} - Spot ${route.beltSpot.number}`;
-    }
-    return areaLabels[route.assignedArea] || route.assignedArea;
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -72,15 +69,15 @@ export default function Routes() {
       {isLoading ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-auto max-h-[calc(100vh-200px)]">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Route Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Assigned Area
+                  Assign Area
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Actions
@@ -93,10 +90,8 @@ export default function Routes() {
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
                     {route.number}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                      {getAreaDisplay(route)}
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                    {route.loadLocation ? assignAreaLabels[route.loadLocation] || route.loadLocation : '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <button

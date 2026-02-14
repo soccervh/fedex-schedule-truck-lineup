@@ -8,6 +8,7 @@ interface RouteData {
   number: string;
   assignedArea: 'EO_POOL' | 'UNLOAD' | 'DOCK' | 'BELT_SPOT';
   beltSpotId?: number | null;
+  loadLocation?: string | null;
 }
 
 interface RouteModalProps {
@@ -23,6 +24,7 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
     number: route?.number || '',
     assignedArea: route?.assignedArea || 'EO_POOL' as const,
     beltSpotId: route?.beltSpotId || null as number | null,
+    loadLocation: route?.loadLocation || '' as string,
   });
 
   const { data: belts } = useQuery({
@@ -107,42 +109,24 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Assigned Area
+              Assign Area
             </label>
             <select
-              value={formData.assignedArea}
-              onChange={(e) => setFormData({
-                ...formData,
-                assignedArea: e.target.value as any,
-                beltSpotId: e.target.value !== 'BELT_SPOT' ? null : formData.beltSpotId,
-              })}
+              value={formData.loadLocation}
+              onChange={(e) => setFormData({ ...formData, loadLocation: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
             >
-              <option value="EO_POOL">EO Pool</option>
+              <option value="">None</option>
+              <option value="UNASSIGNED">Unassigned</option>
+              <option value="DOC">Doc</option>
               <option value="UNLOAD">Unload</option>
-              <option value="DOCK">Dock</option>
-              <option value="BELT_SPOT">Belt Spot</option>
+              <option value="LABEL_FACER">Label Facer</option>
+              <option value="SCANNER">Scanner</option>
+              <option value="SPLITTER">Splitter</option>
+              <option value="FO">FO</option>
+              <option value="PULLER">Puller</option>
             </select>
           </div>
-
-          {formData.assignedArea === 'BELT_SPOT' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Belt Spot
-              </label>
-              <select
-                value={formData.beltSpotId || ''}
-                onChange={(e) => setFormData({ ...formData, beltSpotId: parseInt(e.target.value) || null })}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              >
-                <option value="">Select a spot...</option>
-                {beltSpotOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <button
             type="submit"

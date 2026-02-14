@@ -1,4 +1,15 @@
-import { calculateRouteNumber, formatSpotName, formatRouteDisplay } from '../utils/belt';
+import { formatSpotName } from '../utils/belt';
+
+const assignAreaLabels: Record<string, string> = {
+  UNASSIGNED: 'Unassigned',
+  DOC: 'Doc',
+  UNLOAD: 'Unload',
+  LABEL_FACER: 'Label Facer',
+  SCANNER: 'Scanner',
+  SPLITTER: 'Splitter',
+  FO: 'FO',
+  PULLER: 'Puller',
+};
 
 interface CoverageNeed {
   spot: {
@@ -10,6 +21,11 @@ interface CoverageNeed {
       baseNumber: number;
     };
   };
+  route?: {
+    id: number;
+    number: string;
+    loadLocation?: string | null;
+  } | null;
   user: {
     name: string;
   };
@@ -34,7 +50,10 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
         ) : (
           coverageNeeds.map((need) => {
             const spotName = formatSpotName(need.spot.belt.letter, need.spot.number);
-            const routeNum = calculateRouteNumber(need.spot.belt.baseNumber, need.spot.number);
+            const routeDisplay = need.route ? `R:${need.route.number}` : '—';
+            const areaDisplay = need.route?.loadLocation
+              ? assignAreaLabels[need.route.loadLocation] || need.route.loadLocation
+              : null;
 
             return (
               <button
@@ -43,8 +62,11 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
                 className="w-full p-3 text-left border-b border-gray-100 hover:bg-red-50 transition-colors"
               >
                 <div className="font-medium text-gray-900">
-                  {spotName} {formatRouteDisplay(routeNum)}
+                  {spotName} {routeDisplay}
                 </div>
+                {areaDisplay && (
+                  <div className="text-xs text-blue-600 font-medium">{areaDisplay}</div>
+                )}
                 <div className="text-sm text-gray-600 truncate">
                   {need.reason === 'unassigned' ? '(No one assigned)' : `(${need.user.name} off)`}
                 </div>

@@ -5,6 +5,7 @@ type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 interface Spot {
   id: number;
   number: number;
+  route?: { id: number; number: string; loadLocation?: string | null } | null;
   assignment: {
     id: string;
     truckNumber: string;
@@ -63,6 +64,7 @@ export function BeltDetailView({
             spotNumber={spot.number}
             beltLetter={beltLetter}
             baseNumber={baseNumber}
+            route={spot.route}
             assignment={spot.assignment}
             onClick={() => onSpotClick(spot)}
             isManager={isManager}

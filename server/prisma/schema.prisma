@@ -192,15 +192,27 @@ model TruckSpotAssignment {
   @@unique([truckId, date])
 }
 
+enum LoadLocation {
+  UNASSIGNED
+  DOC
+  UNLOAD
+  LABEL_FACER
+  SCANNER
+  SPLITTER
+  FO
+  PULLER
+}
+
 model Route {
-  id           Int       @id @default(autoincrement())
-  number       String    @unique
+  id           Int           @id @default(autoincrement())
+  number       String        @unique
   assignedArea RouteArea
   beltSpotId   Int?
-  beltSpot     Spot?     @relation(fields: [beltSpotId], references: [id])
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  beltSpot     Spot?         @relation(fields: [beltSpotId], references: [id])
+  loadLocation LoadLocation?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model DailyBriefing {

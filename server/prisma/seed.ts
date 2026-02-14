@@ -36,6 +36,29 @@ async function main() {
 
   console.log('Seeded 4 belts with 32 spots each');
 
+  // Seed routes: 1 per spot (even numbers), 32 per belt, 128 assigned to spots
+  // Plus 128 unassigned odd routes (available for reassignment)
+  const allSpotsForRoutes = await prisma.spot.findMany({
+    include: { belt: true },
+    orderBy: [{ beltId: 'asc' }, { number: 'asc' }],
+  });
+
+  let routeCount = 0;
+  for (const spot of allSpotsForRoutes) {
+    const base = spot.belt.baseNumber;
+    const oddRoute = base + spot.number * 2 - 1;  // e.g., 101, 103, 105... (unassigned)
+    const evenRoute = base + spot.number * 2;      // e.g., 102, 104, 106... (assigned to spot)
+
+    await prisma.route.createMany({
+      data: [
+        { number: String(oddRoute), assignedArea: 'EO_POOL' },
+        { number: String(evenRoute), assignedArea: 'BELT_SPOT', beltSpotId: spot.id },
+      ],
+    });
+    routeCount += 2;
+  }
+  console.log(`Seeded ${routeCount} routes (128 on spots, 128 unassigned)`);
+
   // Create facility areas: UNLOAD and DOC
   // UNLOAD - D/C Side (3 spots)
   const unloadDC = await prisma.facilityArea.create({
