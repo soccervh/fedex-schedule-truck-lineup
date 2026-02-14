@@ -48,7 +48,7 @@ router.get('/status/:status', authenticate, async (req, res) => {
 // Create a new truck
 router.post('/', authenticate, requireManager, async (req, res) => {
   try {
-    const { number, status, note, homeSpotId } = req.body;
+    const { number, status, note, homeSpotId, truckType } = req.body;
 
     if (!number) {
       return res.status(400).json({ error: 'Truck number is required' });
@@ -58,6 +58,7 @@ router.post('/', authenticate, requireManager, async (req, res) => {
       data: {
         number,
         status: status || 'AVAILABLE',
+        truckType: truckType || 'UNKNOWN',
         note,
         homeSpotId: homeSpotId ? parseInt(homeSpotId, 10) : null,
       },
@@ -81,12 +82,13 @@ router.post('/', authenticate, requireManager, async (req, res) => {
 router.patch('/:id', authenticate, requireManager, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const { status, note, homeSpotId } = req.body;
+    const { status, note, homeSpotId, truckType } = req.body;
 
     const truck = await prisma.truck.update({
       where: { id: parseInt(id, 10) },
       data: {
         ...(status && { status }),
+        ...(truckType && { truckType }),
         ...(note !== undefined && { note }),
         ...(homeSpotId !== undefined && { homeSpotId: homeSpotId ? parseInt(homeSpotId, 10) : null }),
       },
