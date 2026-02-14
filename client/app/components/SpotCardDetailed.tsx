@@ -115,7 +115,7 @@ export function SpotCardDetailed({
             </div>
             <div className="text-sm text-gray-600">T: {assignment.truckNumber}</div>
             <div className="flex gap-3 mt-2 text-xs text-gray-500">
-              <span>Home: {areaLabels[assignment.user.homeArea]}</span>
+              <span>{route?.loadLocation ? `Area: ${route.loadLocation}` : ''}</span>
               {assignment.isOverride ? (
                 <span className="text-amber-600">✎ Override</span>
               ) : (

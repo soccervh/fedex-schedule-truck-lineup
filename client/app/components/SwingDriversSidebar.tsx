@@ -27,7 +27,6 @@ export function SwingDriversSidebar({ swingDrivers, onDriverClick }: SwingDriver
               className="w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors"
             >
               <div className="font-medium text-gray-900">{driver.name}</div>
-              <div className="text-sm text-gray-600">{driver.homeArea}</div>
             </button>
           ))
         )}

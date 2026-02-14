@@ -48,11 +48,14 @@ interface SpotCardCompactProps {
   showTruckInHeader?: boolean;
 }
 
-const areaColors: Record<HomeArea, string> = {
+const loadLocationColors: Record<string, string> = {
   FO: 'bg-fo',
   DOC: 'bg-doc',
   UNLOAD: 'bg-unload',
   PULLER: 'bg-puller',
+  LABEL_FACER: 'bg-amber-500',
+  SCANNER: 'bg-teal-500',
+  SPLITTER: 'bg-indigo-500',
   UNASSIGNED: 'bg-gray-400',
 };
 
@@ -98,14 +101,12 @@ export function SpotCardCompact({
   // Get truck number - prefer independent truck assignment, fall back to driver assignment's truck
   const truckNumber = truckAssignment?.truck.number || assignment?.truckNumber;
 
-  const isSwingFilling = assignment?.user.role === 'SWING' && assignment?.originalUserHomeArea;
-
   const getBackgroundClass = () => {
     if (!assignment) return 'bg-gray-50 border-dashed';
     if (assignment.needsCoverage) return 'bg-red-100 border-red-400 border-2';
-    if (isSwingFilling) return 'split-color text-white';
     if (assignment.user.role === 'SWING') return 'bg-swing text-white';
-    return `${areaColors[assignment.user.homeArea]} text-white`;
+    const colorKey = route?.loadLocation || 'UNASSIGNED';
+    return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white`;
   };
 
   const getSplitStyle = () => {

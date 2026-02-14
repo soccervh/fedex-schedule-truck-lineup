@@ -233,13 +233,13 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                 {spot.assignment?.needsCoverage ? (
                   swingDrivers?.map((driver: any) => (
                     <option key={driver.id} value={driver.id}>
-                      {driver.name} ({driver.homeArea})
+                      {driver.name}
                     </option>
                   ))
                 ) : (
                   people?.map((person: any) => (
                     <option key={person.id} value={person.id}>
-                      {person.name} ({person.homeArea})
+                      {person.name}
                     </option>
                   ))
                 )}
