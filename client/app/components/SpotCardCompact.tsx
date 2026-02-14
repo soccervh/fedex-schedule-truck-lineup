@@ -109,20 +109,6 @@ export function SpotCardCompact({
     return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white`;
   };
 
-  const getSplitStyle = () => {
-    if (!isSwingFilling || !assignment?.originalUserHomeArea) return {};
-    const colorMap: Record<HomeArea, string> = {
-      FO: '#3B82F6',
-      DOC: '#F97316',
-      UNLOAD: '#22C55E',
-      PULLER: '#EAB308',
-      UNASSIGNED: '#9CA3AF',
-    };
-    return {
-      background: `linear-gradient(135deg, #6B7280 50%, ${colorMap[assignment.originalUserHomeArea]} 50%)`,
-    };
-  };
-
   const handleDragStart = (e: React.DragEvent) => {
     if (!isManager || !truckNumber) return;
     e.dataTransfer.setData('text/plain', truckNumber);
@@ -145,7 +131,6 @@ export function SpotCardCompact({
       className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
         isManager && truckNumber ? 'cursor-grab active:cursor-grabbing' : isManager ? 'cursor-pointer' : 'cursor-default'
       } ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
-      style={getSplitStyle()}
     >
       <div className="flex justify-between items-center text-xs font-medium opacity-90">
         <span>{spotName}</span>
