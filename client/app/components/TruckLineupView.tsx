@@ -7,6 +7,7 @@ interface TruckData {
   id: number;
   number: string;
   status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  truckType?: string;
   note?: string;
 }
 
@@ -56,6 +57,11 @@ interface TruckLineupViewProps {
 }
 
 import { useState } from 'react';
+
+const truckTypeLabel = (t?: string) => {
+  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER_VAN: 'Sprinter Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
+  return t ? labels[t] || t : '';
+};
 
 function TruckSidebar({
   title,
@@ -135,6 +141,9 @@ function TruckSidebar({
               className={`${badgeColor} rounded p-2 text-sm cursor-grab active:cursor-grabbing ${onTruckClick ? 'hover:opacity-80' : ''}`}
             >
               <div className="font-semibold">{truck.number}</div>
+              {truck.truckType && truck.truckType !== 'UNKNOWN' && (
+                <div className="text-xs opacity-75">{truckTypeLabel(truck.truckType)}</div>
+              )}
               {truck.note && (
                 <div className="text-xs opacity-75 mt-1">{truck.note}</div>
               )}
@@ -196,6 +205,9 @@ function MobileTruckPanel({
               className={`${badgeColor} rounded p-2 text-sm ${onTruckClick ? 'active:opacity-70' : ''}`}
             >
               <div className="font-semibold">{truck.number}</div>
+              {truck.truckType && truck.truckType !== 'UNKNOWN' && (
+                <div className="text-xs opacity-75">{truckTypeLabel(truck.truckType)}</div>
+              )}
               {truck.note && (
                 <div className="text-xs opacity-75 mt-0.5">{truck.note}</div>
               )}

@@ -23,6 +23,7 @@ interface TruckAssignment {
     id: number;
     number: string;
     status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+    truckType?: string;
   };
 }
 
@@ -47,6 +48,11 @@ interface SpotCardCompactProps {
   isDragEnabled?: boolean;
   showTruckInHeader?: boolean;
 }
+
+const truckTypeLabel = (t?: string) => {
+  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER_VAN: 'Sprinter Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
+  return t ? labels[t] || t : '';
+};
 
 const loadLocationColors: Record<string, string> = {
   FO: 'bg-fo',
@@ -141,7 +147,14 @@ export function SpotCardCompact({
           <div className={`font-semibold truncate text-sm ${assignment.needsCoverage ? 'line-through opacity-60' : ''}`}>
             {assignment.user.name}
           </div>
-          {truckNumber && <div className="text-xs opacity-80">T: {truckNumber}</div>}
+          {truckNumber && (
+            <div className="text-xs opacity-80">
+              T: {truckNumber}
+              {truckAssignment?.truck.truckType && truckAssignment.truck.truckType !== 'UNKNOWN' && (
+                <span className="ml-1">({truckTypeLabel(truckAssignment.truck.truckType)})</span>
+              )}
+            </div>
+          )}
           {assignment.needsCoverage && (
             <div className="text-xs font-bold text-red-700 mt-1">OPEN</div>
           )}
@@ -149,7 +162,14 @@ export function SpotCardCompact({
       ) : (
         <>
           <div className="text-gray-400 text-sm">—</div>
-          {truckNumber && <div className="text-xs text-gray-500">T: {truckNumber}</div>}
+          {truckNumber && (
+            <div className="text-xs text-gray-500">
+              T: {truckNumber}
+              {truckAssignment?.truck.truckType && truckAssignment.truck.truckType !== 'UNKNOWN' && (
+                <span className="ml-1">({truckTypeLabel(truckAssignment.truck.truckType)})</span>
+              )}
+            </div>
+          )}
         </>
       )}
     </button>

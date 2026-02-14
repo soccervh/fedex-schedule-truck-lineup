@@ -6,6 +6,7 @@ interface TruckData {
   id: number;
   number: string;
   status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  truckType?: string;
 }
 
 interface Spot {
