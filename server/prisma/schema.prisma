@@ -40,6 +40,14 @@ enum TruckStatus {
   OUT_OF_SERVICE
 }
 
+enum TruckType {
+  REACH
+  NINE_HUNDRED
+  SPRINTER_VAN
+  RENTAL
+  UNKNOWN
+}
+
 enum RouteArea {
   EO_POOL
   UNLOAD
@@ -169,6 +177,7 @@ model Truck {
   id              Int                   @id @default(autoincrement())
   number          String                @unique
   status          TruckStatus           @default(AVAILABLE)
+  truckType       TruckType             @default(UNKNOWN)
   homeSpotId      Int?
   homeSpot        Spot?                 @relation(fields: [homeSpotId], references: [id])
   note            String?
