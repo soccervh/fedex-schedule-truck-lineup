@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { X } from 'lucide-react';
+import { TRUCK_TYPE_LABELS, TruckType } from '../types/lineup';
 
 interface Truck {
   id?: number;
   number: string;
   status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  truckType?: TruckType;
   homeSpotId?: number | null;
   note?: string;
   homeSpot?: {
@@ -37,6 +39,7 @@ export function TruckModal({ truck, onClose }: TruckModalProps) {
   const [formData, setFormData] = useState({
     number: truck?.number || '',
     status: truck?.status || 'AVAILABLE',
+    truckType: truck?.truckType || 'UNKNOWN',
     homeSpotId: truck?.homeSpotId?.toString() || '',
     note: truck?.note || '',
   });
@@ -139,6 +142,23 @@ export function TruckModal({ truck, onClose }: TruckModalProps) {
               <option value="AVAILABLE">Available</option>
               <option value="ASSIGNED">Assigned</option>
               <option value="OUT_OF_SERVICE">Out of Service</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Truck Type
+            </label>
+            <select
+              value={formData.truckType}
+              onChange={(e) => setFormData({ ...formData, truckType: e.target.value as TruckType })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              {Object.entries(TRUCK_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
