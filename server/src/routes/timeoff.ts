@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { sendEmail } from '../utils/email';
 
 const router = Router();
 
@@ -58,24 +59,68 @@ router.get('/mine', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// Get pending time off count (for manager badge)
+router.get('/pending-count', authenticate, requireManager, async (req: AuthRequest, res) => {
+  try {
+    const count = await prisma.timeOff.count({
+      where: { status: 'PENDING' },
+    });
+    res.json({ count });
+  } catch (error) {
+    console.error('Get pending count error:', error);
+    res.status(500).json({ error: 'Failed to get pending count' });
+  }
+});
+
 // Request time off (any user)
 router.post('/request', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { dates, type, note } = req.body;
+    const { dates, type, note, startDate } = req.body;
 
-    if (!dates || !Array.isArray(dates) || dates.length === 0 || !type) {
-      return res.status(400).json({ error: 'Dates array and type required' });
+    // For VACATION_WEEK, auto-generate 5 weekdays from startDate
+    let datesToCreate: string[] = [];
+
+    if (type === 'VACATION_WEEK') {
+      if (!startDate) {
+        return res.status(400).json({ error: 'Start date required for vacation week' });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const start = new Date(startDate);
+      const dayOfWeek = start.getDay();
+
+      // Validate start day matches work schedule
+      if (user.workSchedule === 'MON_FRI' && dayOfWeek !== 1) {
+        return res.status(400).json({ error: 'Vacation week must start on Monday for Mon-Fri schedule' });
+      }
+      if (user.workSchedule === 'TUE_SAT' && dayOfWeek !== 2) {
+        return res.status(400).json({ error: 'Vacation week must start on Tuesday for Tue-Sat schedule' });
+      }
+
+      // Generate 5 consecutive days
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        datesToCreate.push(d.toISOString().split('T')[0]);
+      }
+    } else {
+      if (!dates || !Array.isArray(dates) || dates.length === 0) {
+        return res.status(400).json({ error: 'Dates array required' });
+      }
+      datesToCreate = dates;
+    }
+
+    if (!type) {
+      return res.status(400).json({ error: 'Type required' });
     }
 
     const created = [];
-
-    for (const dateStr of dates) {
+    for (const dateStr of datesToCreate) {
       const date = new Date(dateStr);
-
       const existing = await prisma.timeOff.findUnique({
-        where: {
-          userId_date: { userId: req.user!.userId, date },
-        },
+        where: { userId_date: { userId: req.user!.userId, date } },
       });
 
       if (!existing) {
@@ -91,6 +136,33 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
         });
         created.push(timeOff);
       }
+    }
+
+    // Send email to all managers (fire-and-forget)
+    const requester = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const managers = await prisma.user.findMany({
+      where: { role: 'MANAGER', isActive: true },
+      select: { email: true },
+    });
+
+    if (managers.length > 0 && requester) {
+      const typeLabels: Record<string, string> = {
+        VACATION_WEEK: 'Vacation Week',
+        VACATION_DAY: 'Vacation Day',
+        PERSONAL: 'Personal',
+        HOLIDAY: 'Holiday',
+        SICK: 'Sick',
+        SCHEDULED_OFF: 'Scheduled Off',
+      };
+      const dateList = datesToCreate.map(d => new Date(d).toLocaleDateString()).join(', ');
+      sendEmail(
+        managers.map(m => m.email),
+        `Time Off Request: ${requester.name}`,
+        `<p><strong>${requester.name}</strong> has requested time off.</p>
+         <p><strong>Type:</strong> ${typeLabels[type] || type}</p>
+         <p><strong>Date(s):</strong> ${dateList}</p>
+         <p>Please review this request in the Time Off management page.</p>`,
+      );
     }
 
     res.status(201).json(created);
@@ -110,16 +182,14 @@ router.patch('/:id', authenticate, requireManager, async (req: AuthRequest, res)
       return res.status(400).json({ error: 'Valid status required' });
     }
 
+    const existing = await prisma.timeOff.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ error: 'Time off not found' });
+
     const timeOff = await prisma.timeOff.update({
       where: { id },
       data: { status, note },
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        user: { select: { id: true, name: true } },
       },
     });
 
