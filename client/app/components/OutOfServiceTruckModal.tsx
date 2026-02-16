@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { X, AlertTriangle, CheckCircle, Truck } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Truck, Home } from 'lucide-react';
 
 interface TruckData {
   id: number;
   number: string;
   status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
   note?: string;
+  homeSpotId?: number | null;
+  homeSpot?: {
+    id: number;
+    number: number;
+    belt: {
+      id: number;
+      letter: string;
+    };
+  };
 }
 
 interface BeltSpot {
@@ -32,15 +41,17 @@ interface OutOfServiceTruckModalProps {
   allBelts: Belt[];
   date: string;
   onClose: () => void;
+  onEditTruck?: () => void;
 }
 
-type ModalStep = 'select' | 'confirm-available' | 'confirm-spot';
+type ModalStep = 'select' | 'confirm-available' | 'confirm-spot' | 'confirm-home-spot';
 
 export function OutOfServiceTruckModal({
   truck,
   allBelts,
   date,
   onClose,
+  onEditTruck,
 }: OutOfServiceTruckModalProps) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<ModalStep>('select');
@@ -103,8 +114,36 @@ export function OutOfServiceTruckModal({
     return a.spotNumber - b.spotNumber;
   });
 
+  // Look up home spot occupancy
+  const homeSpotLabel = truck.homeSpot
+    ? `${truck.homeSpot.belt.letter}${truck.homeSpot.number}`
+    : null;
+
+  const homeSpotOccupant = truck.homeSpot
+    ? allSpots.find(s => s.id === truck.homeSpot!.id)
+    : null;
+
   const handleMoveToAvailable = () => {
     setStep('confirm-available');
+  };
+
+  const handleSendToHomeSpot = () => {
+    if (!truck.homeSpot) return;
+    if (homeSpotOccupant?.hasTruck) {
+      setStep('confirm-home-spot');
+    } else {
+      setSelectedSpot({
+        id: truck.homeSpot.id,
+        beltLetter: truck.homeSpot.belt.letter,
+        spotNumber: truck.homeSpot.number,
+      });
+      setStep('confirm-spot');
+    }
+  };
+
+  const handleConfirmHomeSpot = () => {
+    if (!truck.homeSpot) return;
+    assignToSpotMutation.mutate({ spotId: truck.homeSpot.id });
   };
 
   const handleSelectSpot = (spot: typeof allSpots[0]) => {
@@ -153,6 +192,44 @@ export function OutOfServiceTruckModal({
         {step === 'select' && (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Send to Home Spot */}
+              {truck.homeSpot ? (
+                <button
+                  onClick={handleSendToHomeSpot}
+                  className="w-full p-4 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Home size={24} className="text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-blue-800">
+                        Send to Home Spot ({homeSpotLabel})
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Assign truck to its designated spot
+                        {homeSpotOccupant?.hasTruck && (
+                          <span className="text-amber-600 ml-1">
+                            (currently has {homeSpotOccupant.currentTruck})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ) : onEditTruck ? (
+                <button
+                  onClick={() => { onClose(); onEditTruck(); }}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-left hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Home size={24} className="text-gray-400" />
+                    <div>
+                      <p className="font-semibold text-gray-700">Add Home Spot</p>
+                      <p className="text-sm text-gray-500">No home spot set — tap to assign one</p>
+                    </div>
+                  </div>
+                </button>
+              ) : null}
+
               {/* Move to Available */}
               <button
                 onClick={handleMoveToAvailable}
@@ -278,6 +355,48 @@ export function OutOfServiceTruckModal({
                 className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
               >
                 {isPending ? 'Assigning...' : 'Yes, Assign It'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'confirm-home-spot' && truck.homeSpot && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-center gap-2 text-amber-600">
+              <AlertTriangle size={24} />
+              <span className="font-semibold">Spot Already Occupied</span>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+              <p className="text-lg font-semibold text-gray-800">
+                Is truck {truck.number} ready to drive?
+              </p>
+              {truck.note && (
+                <p className="text-sm text-red-600 mt-2">
+                  Previous issue: {truck.note}
+                </p>
+              )}
+              <p className="text-gray-600 mt-3">
+                {homeSpotLabel} already has truck <strong>{homeSpotOccupant?.currentTruck}</strong>.
+              </p>
+              <p className="text-gray-600 mt-1">
+                It will be moved to <strong>Available (Spare)</strong>.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleBack}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                No, Go Back
+              </button>
+              <button
+                onClick={handleConfirmHomeSpot}
+                disabled={isPending}
+                className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {isPending ? 'Assigning...' : 'Yes, Swap Trucks'}
               </button>
             </div>
           </div>
