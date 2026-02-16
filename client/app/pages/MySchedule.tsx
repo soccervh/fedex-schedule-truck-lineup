@@ -14,8 +14,9 @@ export default function MySchedule() {
   weekEnd.setDate(weekStart.getDate() + 6);
 
   const [requestDates, setRequestDates] = useState<string[]>([]);
-  const [requestType, setRequestType] = useState<string>('VACATION');
+  const [requestType, setRequestType] = useState<string>('VACATION_DAY');
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [vacationWeekStart, setVacationWeekStart] = useState<string>('');
 
   const { data: assignments } = useQuery({
     queryKey: ['my-assignments'],
@@ -39,13 +40,14 @@ export default function MySchedule() {
   });
 
   const requestMutation = useMutation({
-    mutationFn: async (data: { dates: string[]; type: string }) => {
+    mutationFn: async (data: { dates: string[]; type: string; startDate?: string }) => {
       return api.post('/timeoff/request', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-timeoffs'] });
       setShowRequestForm(false);
       setRequestDates([]);
+      setVacationWeekStart('');
     },
   });
 
@@ -55,8 +57,13 @@ export default function MySchedule() {
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (requestDates.length === 0) return;
-    requestMutation.mutate({ dates: requestDates, type: requestType });
+    if (requestType === 'VACATION_WEEK') {
+      if (!vacationWeekStart) return;
+      requestMutation.mutate({ dates: [], type: requestType, startDate: vacationWeekStart });
+    } else {
+      if (requestDates.length === 0) return;
+      requestMutation.mutate({ dates: requestDates, type: requestType });
+    }
   };
 
   const statusColors = {
@@ -134,34 +141,36 @@ export default function MySchedule() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date(s)
+                  {requestType === 'VACATION_WEEK' ? 'Week Start Date' : 'Date(s)'}
                 </label>
-                <input
-                  type="date"
-                  onChange={(e) => {
-                    if (e.target.value && !requestDates.includes(e.target.value)) {
-                      setRequestDates([...requestDates, e.target.value]);
-                    }
-                  }}
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {requestDates.map((d) => (
-                    <span
-                      key={d}
-                      className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                    >
-                      {new Date(d).toLocaleDateString()}
-                      <button
-                        type="button"
-                        onClick={() => setRequestDates(requestDates.filter((x) => x !== d))}
-                        className="ml-1"
-                      >
-                        x
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {requestType === 'VACATION_WEEK' ? (
+                  <input
+                    type="date"
+                    value={vacationWeekStart}
+                    onChange={(e) => setVacationWeekStart(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                ) : (
+                  <>
+                    <input
+                      type="date"
+                      onChange={(e) => {
+                        if (e.target.value && !requestDates.includes(e.target.value)) {
+                          setRequestDates([...requestDates, e.target.value]);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border rounded-md"
+                    />
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {requestDates.map((d) => (
+                        <span key={d} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                          {new Date(d).toLocaleDateString()}
+                          <button type="button" onClick={() => setRequestDates(requestDates.filter((x) => x !== d))} className="ml-1">x</button>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -172,7 +181,10 @@ export default function MySchedule() {
                   onChange={(e) => setRequestType(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="VACATION">Vacation</option>
+                  <option value="VACATION_WEEK">Vacation Week</option>
+                  <option value="VACATION_DAY">Vacation Day</option>
+                  <option value="PERSONAL">Personal</option>
+                  <option value="HOLIDAY">Holiday</option>
                   <option value="SICK">Sick</option>
                   <option value="SCHEDULED_OFF">Scheduled Off</option>
                 </select>
@@ -180,7 +192,10 @@ export default function MySchedule() {
             </div>
             <button
               type="submit"
-              disabled={requestDates.length === 0 || requestMutation.isPending}
+              disabled={
+                (requestType === 'VACATION_WEEK' ? !vacationWeekStart : requestDates.length === 0) ||
+                requestMutation.isPending
+              }
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {requestMutation.isPending ? 'Submitting...' : 'Submit Request'}
@@ -192,7 +207,9 @@ export default function MySchedule() {
           {myTimeOffs?.slice(0, 10).map((to: any) => (
             <div key={to.id} className="flex items-center justify-between py-2 border-b">
               <span>{new Date(to.date).toLocaleDateString()}</span>
-              <span className="text-sm text-gray-500">{to.type}</span>
+              <span className="text-sm text-gray-500">
+                {({ VACATION_WEEK: 'Vacation Week', VACATION_DAY: 'Vacation Day', PERSONAL: 'Personal', HOLIDAY: 'Holiday', SICK: 'Sick', SCHEDULED_OFF: 'Scheduled Off' } as Record<string, string>)[to.type] || to.type}
+              </span>
               <span className={`text-sm font-medium ${statusColors[to.status as keyof typeof statusColors]}`}>
                 {to.status}
               </span>
