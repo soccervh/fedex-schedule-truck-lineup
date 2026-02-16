@@ -88,6 +88,14 @@ export default function TruckLineupPage() {
     setOutOfServiceTruck(truck);
   };
 
+  const handleEditOutOfServiceTruck = () => {
+    if (outOfServiceTruck) {
+      setSelectedTruck(outOfServiceTruck);
+      setTruckModalOpen(true);
+      setOutOfServiceTruck(null);
+    }
+  };
+
   const handleCloseTruckModal = () => {
     setTruckModalOpen(false);
     setSelectedTruck(null);
@@ -318,6 +326,7 @@ export default function TruckLineupPage() {
           allBelts={beltsData}
           date={selectedDate}
           onClose={() => setOutOfServiceTruck(null)}
+          onEditTruck={handleEditOutOfServiceTruck}
         />
       )}
 
