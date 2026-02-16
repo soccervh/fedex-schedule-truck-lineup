@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 import { Home } from 'lucide-react';
 
 interface LayoutProps {
@@ -13,13 +15,25 @@ export function AppLayout({ children }: LayoutProps) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const { data: pendingData } = useQuery({
+    queryKey: ['timeoff-pending-count'],
+    queryFn: async () => {
+      const res = await api.get('/timeoff/pending-count');
+      return res.data;
+    },
+    enabled: isManager,
+    refetchInterval: 60000,
+  });
+
+  const pendingCount = pendingData?.count ?? 0;
+
   const navItems = [
     { path: '/', label: 'Home', show: true },
     { path: '/facility', label: 'Facility', show: true },
     { path: '/truck-lineup', label: 'Truck Lineup', show: true },
     { path: '/routes', label: 'Routes', show: isManager },
     { path: '/people', label: 'People', show: isManager },
-    { path: '/timeoff', label: 'Time Off', show: isManager },
+    { path: '/timeoff', label: 'Time Off', show: isManager, badge: pendingCount },
     { path: '/my-schedule', label: 'My Schedule', show: !isManager },
   ];
 
@@ -45,13 +59,18 @@ export function AppLayout({ children }: LayoutProps) {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`text-sm font-medium ${
+                    className={`relative text-sm font-medium ${
                       location.pathname === item.path
                         ? 'text-blue-600'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     {item.label}
+                    {item.badge ? (
+                      <span className="absolute -top-2 -right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 ))}
               <div className="flex items-center gap-4 ml-4 pl-4 border-l">
@@ -98,6 +117,11 @@ export function AppLayout({ children }: LayoutProps) {
                     }`}
                   >
                     {item.label}
+                    {item.badge ? (
+                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 ))}
               <div className="flex items-center justify-between px-2 pt-2 mt-2 border-t">
