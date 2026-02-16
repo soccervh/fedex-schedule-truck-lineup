@@ -41,7 +41,14 @@ export default function TimeOff() {
   const handleApprove = (id: string) => updateMutation.mutate({ id, status: 'APPROVED' });
   const handleDeny = (id: string) => updateMutation.mutate({ id, status: 'DENIED' });
 
-  const typeLabels = { VACATION: 'Vacation', SICK: 'Sick', SCHEDULED_OFF: 'Scheduled Off' };
+  const typeLabels: Record<string, string> = {
+    VACATION_WEEK: 'Vacation Week',
+    VACATION_DAY: 'Vacation Day',
+    PERSONAL: 'Personal',
+    HOLIDAY: 'Holiday',
+    SICK: 'Sick',
+    SCHEDULED_OFF: 'Scheduled Off',
+  };
   const statusColors = {
     PENDING: 'bg-yellow-100 text-yellow-800',
     APPROVED: 'bg-green-100 text-green-800',
