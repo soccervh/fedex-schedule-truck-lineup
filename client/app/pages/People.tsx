@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
 import { PersonModal } from '../components/PersonModal';
+import { Link } from 'react-router';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 const roleLabels: Record<string, string> = { DRIVER: 'Driver', SWING: 'Swing', MANAGER: 'Manager', CSA: 'CSA', HANDLER: 'Handler' };
@@ -104,7 +105,9 @@ export default function People() {
               {filteredPeople?.map((person: any) => (
                 <tr key={person.id}>
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
-                    {person.name}
+                    <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                      {person.name}
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {person.email}
