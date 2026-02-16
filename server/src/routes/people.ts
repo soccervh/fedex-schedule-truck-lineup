@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/password';
 import { prisma } from '../lib/prisma';
+import { ensureBalancesReset, getUsedBalances } from '../utils/balance';
 
 const router = Router();
 
@@ -45,6 +46,58 @@ router.get('/swing', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Get swing drivers error:', error);
     res.status(500).json({ error: 'Failed to get swing drivers' });
+  }
+});
+
+// Get person detail with balances and time off history
+router.get('/:id', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+
+    // Non-managers can only view themselves
+    if (req.user!.role !== 'MANAGER' && req.user!.userId !== id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    await ensureBalancesReset(id);
+
+    const person = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        homeArea: true,
+        workSchedule: true,
+        vacationWeeks: true,
+        vacationDays: true,
+        personalDays: true,
+        holidays: true,
+        sickDays: true,
+        sickDayCarryover: true,
+        balanceResetDate: true,
+        isActive: true,
+      },
+    });
+
+    if (!person) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+
+    const used = await getUsedBalances(id, person.balanceResetDate);
+
+    const timeOffs = await prisma.timeOff.findMany({
+      where: { userId: id },
+      orderBy: { date: 'desc' },
+      take: 50,
+    });
+
+    res.json({ ...person, usedBalances: used, timeOffs });
+  } catch (error) {
+    console.error('Get person detail error:', error);
+    res.status(500).json({ error: 'Failed to get person detail' });
   }
 });
 
@@ -94,16 +147,26 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
 router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
-    const { name, phone, role, homeArea, isActive } = req.body;
+    const {
+      name, phone, email, role, homeArea, isActive, workSchedule,
+      vacationWeeks, vacationDays, personalDays, holidays, sickDays,
+    } = req.body;
 
     const user = await prisma.user.update({
       where: { id },
       data: {
         name,
         phone,
+        email,
         role,
         homeArea,
         isActive,
+        workSchedule,
+        vacationWeeks,
+        vacationDays,
+        personalDays,
+        holidays,
+        sickDays,
       },
       select: {
         id: true,
@@ -113,6 +176,13 @@ router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) =
         homeArea: true,
         phone: true,
         isActive: true,
+        workSchedule: true,
+        vacationWeeks: true,
+        vacationDays: true,
+        personalDays: true,
+        holidays: true,
+        sickDays: true,
+        sickDayCarryover: true,
       },
     });
 
