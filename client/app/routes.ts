@@ -8,6 +8,7 @@ export default [
     route("truck-lineup", "./pages/TruckLineupPage.tsx"),
     route("routes", "./pages/Routes.tsx"),
     route("people", "./pages/People.tsx"),
+    route("people/:id", "./pages/PersonDetail.tsx"),
     route("timeoff", "./pages/TimeOff.tsx"),
     route("my-schedule", "./pages/MySchedule.tsx"),
   ]),
