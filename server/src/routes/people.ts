@@ -104,7 +104,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
 // Create person (manager only)
 router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => {
   try {
-    const { email, password, name, phone, role, homeArea } = req.body;
+    const { email, password, name, phone, role, homeArea, workSchedule } = req.body;
 
     if (!email || !password || !name || !role || !homeArea) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -125,6 +125,7 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
         phone,
         role,
         homeArea,
+        workSchedule,
       },
       select: {
         id: true,

@@ -9,6 +9,8 @@ interface Person {
   email: string;
   phone?: string;
   role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
+  homeArea?: string;
+  workSchedule?: string;
 }
 
 interface PersonModalProps {
@@ -26,6 +28,8 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
     phone: person?.phone || '',
     password: '',
     role: person?.role || 'DRIVER',
+    homeArea: person?.homeArea || 'UNASSIGNED',
+    workSchedule: person?.workSchedule || 'MON_FRI',
   });
 
   const createMutation = useMutation({
@@ -141,6 +145,33 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
               <option value="MANAGER">Manager</option>
               <option value="CSA">CSA</option>
               <option value="HANDLER">Handler</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Home Area</label>
+            <select
+              value={formData.homeArea}
+              onChange={(e) => setFormData({ ...formData, homeArea: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="FO">FO</option>
+              <option value="DOC">DOC</option>
+              <option value="UNLOAD">Unload</option>
+              <option value="PULLER">Puller</option>
+              <option value="UNASSIGNED">Unassigned</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Work Schedule</label>
+            <select
+              value={formData.workSchedule}
+              onChange={(e) => setFormData({ ...formData, workSchedule: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="MON_FRI">Mon - Fri</option>
+              <option value="TUE_SAT">Tue - Sat</option>
             </select>
           </div>
 
