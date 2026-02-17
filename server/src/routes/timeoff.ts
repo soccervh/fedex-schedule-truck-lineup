@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { sendEmail } from '../utils/email';
 
 const router = Router();
 
-// Get time off for a date range (manager view)
-router.get('/', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Get time off for a date range (OP_LEAD+ view)
+router.get('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const { startDate, endDate, status } = req.query;
 
@@ -59,8 +59,8 @@ router.get('/mine', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Get pending time off count (for manager badge)
-router.get('/pending-count', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Get pending time off count (for OP_LEAD+ badge)
+router.get('/pending-count', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const count = await prisma.timeOff.count({
       where: { status: 'PENDING' },
@@ -138,14 +138,13 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
       }
     }
 
-    // Send email to all managers (fire-and-forget)
-    const requester = await prisma.user.findUnique({ where: { id: req.user!.userId } });
-    const managers = await prisma.user.findMany({
-      where: { role: 'MANAGER', isActive: true },
-      select: { email: true },
+    // Send email to assigned manager only (fire-and-forget)
+    const requester = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      include: { manager: { select: { email: true, name: true } } },
     });
 
-    if (managers.length > 0 && requester) {
+    if (requester?.manager) {
       const typeLabels: Record<string, string> = {
         VACATION_WEEK: 'Vacation Week',
         VACATION_DAY: 'Vacation Day',
@@ -156,7 +155,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
       };
       const dateList = datesToCreate.map(d => new Date(d).toLocaleDateString()).join(', ');
       sendEmail(
-        managers.map(m => m.email),
+        [requester.manager.email],
         `Time Off Request: ${requester.name}`,
         `<p><strong>${requester.name}</strong> has requested time off.</p>
          <p><strong>Type:</strong> ${typeLabels[type] || type}</p>
@@ -172,8 +171,8 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Approve/deny time off (manager only)
-router.patch('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Approve/deny time off (OP_LEAD+, scoped to assigned employees for OP_LEAD)
+router.patch('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
     const { status, note } = req.body;
@@ -182,8 +181,16 @@ router.patch('/:id', authenticate, requireManager, async (req: AuthRequest, res)
       return res.status(400).json({ error: 'Valid status required' });
     }
 
-    const existing = await prisma.timeOff.findUnique({ where: { id } });
+    const existing = await prisma.timeOff.findUnique({
+      where: { id },
+      include: { user: { select: { managerId: true } } },
+    });
     if (!existing) return res.status(404).json({ error: 'Time off not found' });
+
+    // OP_LEAD can only approve/deny for their assigned employees
+    if (req.user!.accessLevel === 'OP_LEAD' && existing.user.managerId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only approve/deny time off for your assigned employees' });
+    }
 
     const timeOff = await prisma.timeOff.update({
       where: { id },
@@ -200,8 +207,8 @@ router.patch('/:id', authenticate, requireManager, async (req: AuthRequest, res)
   }
 });
 
-// Import time off from CSV (manager only)
-router.post('/import', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Import time off from CSV (HIGHEST_MANAGER only)
+router.post('/import', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const { entries } = req.body;
 
