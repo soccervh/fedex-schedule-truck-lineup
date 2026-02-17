@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticate, requireManager } from '../middleware/auth';
+import { authenticate, requireAccessLevel } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
 
 // Update route override for a spot
-router.patch('/:id/route-override', authenticate, requireManager, async (req, res) => {
+router.patch('/:id/route-override', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
   try {
     const { id } = req.params;
     const { routeOverride } = req.body;

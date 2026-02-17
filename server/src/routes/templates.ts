@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -42,7 +42,7 @@ router.get('/belt/:beltId', authenticate, async (req, res) => {
 });
 
 // Create or update template assignment
-router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const { spotId, userId, dayOfWeek, truckNumber } = req.body;
 
@@ -84,7 +84,7 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
 });
 
 // Delete template assignment
-router.delete('/:spotId/:dayOfWeek', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.delete('/:spotId/:dayOfWeek', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const spotId = req.params.spotId as string;
     const dayOfWeek = req.params.dayOfWeek as string;

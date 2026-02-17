@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -26,8 +26,8 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// Create/update briefing for date (manager only)
-router.put('/', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Create/update briefing for date (OP_LEAD+)
+router.put('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const { date: dateStr, startTime, planeArrival, lateFreight } = req.body;
 

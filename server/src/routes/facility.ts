@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireAccessLevel } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -111,7 +111,7 @@ router.get('/areas', authenticate, async (req, res) => {
 });
 
 // Create or update facility assignment
-router.post('/assignments', authenticate, async (req, res) => {
+router.post('/assignments', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
   try {
     const { facilitySpotId, userId, date } = req.body;
 
@@ -154,7 +154,7 @@ router.post('/assignments', authenticate, async (req, res) => {
 });
 
 // Delete facility assignment
-router.delete('/assignments/:assignmentId', authenticate, async (req, res) => {
+router.delete('/assignments/:assignmentId', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
   try {
     const assignmentId = req.params.assignmentId as string;
 

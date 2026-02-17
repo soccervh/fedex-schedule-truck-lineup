@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
 
 // Create or update assignment
-router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const { spotId, userId, date, truckNumber } = req.body;
 
@@ -66,7 +66,7 @@ router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => 
 });
 
 // Update assignment truck number
-router.patch('/:id/truck', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.patch('/:id/truck', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
     const { truckNumber } = req.body;
@@ -98,7 +98,7 @@ router.patch('/:id/truck', authenticate, requireManager, async (req: AuthRequest
 });
 
 // Delete assignment (reset to unassigned)
-router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.delete('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
 
@@ -114,7 +114,7 @@ router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res
 });
 
 // Apply template to date range
-router.post('/apply-template', authenticate, requireManager, async (req: AuthRequest, res) => {
+router.post('/apply-template', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const { startDate, endDate } = req.body;
 

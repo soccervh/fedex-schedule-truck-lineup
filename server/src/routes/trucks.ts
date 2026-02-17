@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireManager } from '../middleware/auth';
+import { authenticate, requireAccessLevel } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -46,7 +46,7 @@ router.get('/status/:status', authenticate, async (req, res) => {
 });
 
 // Create a new truck
-router.post('/', authenticate, requireManager, async (req, res) => {
+router.post('/', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const { number, status, note, homeSpotId, truckType } = req.body;
 
@@ -79,7 +79,7 @@ router.post('/', authenticate, requireManager, async (req, res) => {
 });
 
 // Update truck
-router.patch('/:id', authenticate, requireManager, async (req, res) => {
+router.patch('/:id', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const id = req.params.id as string;
     const { status, note, homeSpotId, truckType } = req.body;
@@ -109,7 +109,7 @@ router.patch('/:id', authenticate, requireManager, async (req, res) => {
 });
 
 // Delete a truck
-router.delete('/:id', authenticate, requireManager, async (req, res) => {
+router.delete('/:id', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const id = req.params.id as string;
 
@@ -157,7 +157,7 @@ router.get('/spot-assignments', authenticate, async (req, res) => {
 });
 
 // Assign truck to spot
-router.post('/spot-assignments', authenticate, requireManager, async (req, res) => {
+router.post('/spot-assignments', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const { truckId, spotId, date } = req.body;
 
@@ -243,7 +243,7 @@ router.post('/spot-assignments', authenticate, requireManager, async (req, res) 
 });
 
 // Remove truck from spot
-router.delete('/spot-assignments/:id', authenticate, requireManager, async (req, res) => {
+router.delete('/spot-assignments/:id', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const id = req.params.id as string;
 
@@ -274,7 +274,7 @@ router.delete('/spot-assignments/:id', authenticate, requireManager, async (req,
 });
 
 // Move truck to out of service
-router.post('/move-to-out-of-service', authenticate, requireManager, async (req, res) => {
+router.post('/move-to-out-of-service', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const { truckId, date, note } = req.body;
 
@@ -314,7 +314,7 @@ router.post('/move-to-out-of-service', authenticate, requireManager, async (req,
 });
 
 // Move truck to available (unassign from any spot for the date)
-router.post('/move-to-available', authenticate, requireManager, async (req, res) => {
+router.post('/move-to-available', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
     const { truckId, date } = req.body;
 

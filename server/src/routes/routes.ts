@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireManager, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -25,8 +25,8 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// Create route (manager only)
-router.post('/', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Create route (HIGHEST_MANAGER only)
+router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const { number, assignedArea, beltSpotId, loadLocation } = req.body;
 
@@ -81,9 +81,8 @@ router.get('/by-spot/:spotId', authenticate, async (req, res) => {
   }
 });
 
-// Assign a route to a spot (manager only)
-// Unlinks any existing route from that spot first
-router.put('/assign-to-spot', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Assign a route to a spot (HIGHEST_MANAGER only)
+router.put('/assign-to-spot', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const { routeId, spotId } = req.body;
 
@@ -110,8 +109,8 @@ router.put('/assign-to-spot', authenticate, requireManager, async (req: AuthRequ
   }
 });
 
-// Update route (manager only)
-router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Update route (HIGHEST_MANAGER only)
+router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id as string);
     const { number, assignedArea, beltSpotId, loadLocation } = req.body;
@@ -144,8 +143,8 @@ router.put('/:id', authenticate, requireManager, async (req: AuthRequest, res) =
   }
 });
 
-// Deactivate route (manager only)
-router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Deactivate route (HIGHEST_MANAGER only)
+router.delete('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id as string);
 
@@ -161,8 +160,8 @@ router.delete('/:id', authenticate, requireManager, async (req: AuthRequest, res
   }
 });
 
-// Update route load location (manager only)
-router.patch('/:id/load-location', authenticate, requireManager, async (req: AuthRequest, res) => {
+// Update route load location (HIGHEST_MANAGER only)
+router.patch('/:id/load-location', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id as string);
     const { loadLocation } = req.body;
