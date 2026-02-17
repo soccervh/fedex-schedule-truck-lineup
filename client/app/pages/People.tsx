@@ -27,6 +27,7 @@ export default function People() {
   const queryClient = useQueryClient();
   const { hasAccess } = useAuth();
   const isHighestManager = hasAccess('HIGHEST_MANAGER');
+  const canViewDetails = hasAccess('OP_LEAD');
   const [showModal, setShowModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<any>(null);
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
@@ -149,18 +150,24 @@ export default function People() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Access Level
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
+                {isHighestManager && (
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredPeople?.map((person: any) => (
                 <tr key={person.id}>
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
-                    <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                      {person.name}
-                    </Link>
+                    {canViewDetails ? (
+                      <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                        {person.name}
+                      </Link>
+                    ) : (
+                      person.name
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {person.email}
@@ -183,20 +190,22 @@ export default function People() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => handleEdit(person)}
-                      className="text-gray-400 hover:text-blue-600 mr-3"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(person.id)}
-                      className="text-gray-400 hover:text-red-600"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+                  {isHighestManager && (
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleEdit(person)}
+                        className="text-gray-400 hover:text-blue-600 mr-3"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(person.id)}
+                        className="text-gray-400 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
