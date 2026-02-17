@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 export function AppLayout({ children }: LayoutProps) {
-  const { user, logout, isManager } = useAuth();
+  const { user, logout, isManager, isOpLead } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -21,7 +21,7 @@ export function AppLayout({ children }: LayoutProps) {
       const res = await api.get('/timeoff/pending-count');
       return res.data;
     },
-    enabled: isManager,
+    enabled: isOpLead,
     refetchInterval: 60000,
   });
 
@@ -33,8 +33,8 @@ export function AppLayout({ children }: LayoutProps) {
     { path: '/truck-lineup', label: 'Truck Lineup', show: true },
     { path: '/routes', label: 'Routes', show: isManager },
     { path: '/people', label: 'People', show: isManager },
-    { path: '/timeoff', label: 'Time Off', show: isManager, badge: pendingCount },
-    { path: '/my-schedule', label: 'My Schedule', show: !isManager },
+    { path: '/timeoff', label: 'Time Off', show: isOpLead, badge: pendingCount },
+    { path: '/my-schedule', label: 'My Schedule', show: !isOpLead },
   ];
 
   return (
