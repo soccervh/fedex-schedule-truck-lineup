@@ -7,9 +7,20 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET: string = process.env.JWT_SECRET;
 
+export type AccessLevel = 'HIGHEST_MANAGER' | 'OP_LEAD' | 'TRUCK_MOVER' | 'EMPLOYEE';
+
+// Ordered from highest to lowest access
+const ACCESS_LEVEL_HIERARCHY: AccessLevel[] = [
+  'HIGHEST_MANAGER',
+  'OP_LEAD',
+  'TRUCK_MOVER',
+  'EMPLOYEE',
+];
+
 export interface AuthPayload {
   userId: string;
-  role: 'MANAGER' | 'DRIVER' | 'SWING' | 'CSA' | 'HANDLER';
+  role: string;
+  accessLevel: AccessLevel;
 }
 
 const VALID_ROLES = ['MANAGER', 'DRIVER', 'SWING', 'CSA', 'HANDLER'] as const;
@@ -23,7 +34,9 @@ function isValidPayload(payload: unknown): payload is AuthPayload {
     typeof obj.userId === 'string' &&
     obj.userId.length > 0 &&
     typeof obj.role === 'string' &&
-    VALID_ROLES.includes(obj.role as typeof VALID_ROLES[number])
+    VALID_ROLES.includes(obj.role as typeof VALID_ROLES[number]) &&
+    typeof obj.accessLevel === 'string' &&
+    ACCESS_LEVEL_HIERARCHY.includes(obj.accessLevel as AccessLevel)
   );
 }
 
@@ -58,13 +71,20 @@ export function authenticate(
   }
 }
 
-export function requireManager(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) {
-  if (req.user?.role !== 'MANAGER') {
-    return res.status(403).json({ error: 'Manager access required' });
-  }
-  next();
+export function requireAccessLevel(minLevel: AccessLevel) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const userIndex = ACCESS_LEVEL_HIERARCHY.indexOf(req.user.accessLevel);
+    const requiredIndex = ACCESS_LEVEL_HIERARCHY.indexOf(minLevel);
+    // Lower index = higher access
+    if (userIndex > requiredIndex) {
+      return res.status(403).json({ error: `${minLevel} access or higher required` });
+    }
+    next();
+  };
 }
+
+// Backward compat alias
+export const requireManager = requireAccessLevel('HIGHEST_MANAGER');
