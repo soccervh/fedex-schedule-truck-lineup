@@ -13,6 +13,7 @@ import truckRoutes from './routes/trucks';
 import spotRoutes from './routes/spots';
 import routeRoutes from './routes/routes';
 import briefingRoutes from './routes/briefing';
+import inviteRoutes from './routes/invites';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +37,7 @@ app.use('/api/trucks', truckRoutes);
 app.use('/api/spots', spotRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/briefing', briefingRoutes);
+app.use('/api/invites', inviteRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
