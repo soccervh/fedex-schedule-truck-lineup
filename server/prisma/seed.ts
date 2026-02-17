@@ -206,17 +206,46 @@ async function main() {
 
   // Create admin manager user
   const hashedPassword = await bcrypt.hash('admin123', 10);
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       email: 'admin@fedex.com',
       password: hashedPassword,
       name: 'Admin Manager',
       role: 'MANAGER',
       homeArea: 'FO',
+      accessLevel: 'HIGHEST_MANAGER',
+    },
+  });
+
+  // Create an OP Lead
+  const opLead = await prisma.user.create({
+    data: {
+      email: 'oplead@fedex.com',
+      password: hashedPassword,
+      name: 'Sam Operations',
+      role: 'MANAGER',
+      homeArea: 'FO',
+      accessLevel: 'OP_LEAD',
+      managerId: admin.id,
+    },
+  });
+
+  // Create a Truck Mover
+  await prisma.user.create({
+    data: {
+      email: 'truckmover@fedex.com',
+      password: hashedPassword,
+      name: 'Pat Mover',
+      role: 'DRIVER',
+      homeArea: 'FO',
+      accessLevel: 'TRUCK_MOVER',
+      managerId: opLead.id,
     },
   });
 
   console.log('Created admin user (email: admin@fedex.com, password: admin123)');
+  console.log('Created OP Lead (email: oplead@fedex.com, password: admin123)');
+  console.log('Created Truck Mover (email: truckmover@fedex.com, password: admin123)');
 
   // Create drivers (FO home area - belt drivers)
   const driverNames = [
@@ -264,6 +293,8 @@ async function main() {
         name: driverNames[i],
         role: 'DRIVER',
         homeArea: driverAreas[i],
+        accessLevel: 'EMPLOYEE',
+        managerId: i < 60 ? admin.id : opLead.id,
       },
     });
     drivers.push(driver);
@@ -287,6 +318,8 @@ async function main() {
         name: swingNames[i],
         role: 'SWING',
         homeArea: swingAreas[i],
+        accessLevel: 'EMPLOYEE',
+        managerId: admin.id,
       },
     });
     swingDrivers.push(swing);
@@ -303,6 +336,8 @@ async function main() {
         name: csaNames[i],
         role: 'CSA',
         homeArea: 'UNASSIGNED',
+        accessLevel: 'EMPLOYEE',
+        managerId: opLead.id,
       },
     });
   }
@@ -319,6 +354,8 @@ async function main() {
         name: handlerNames[i],
         role: 'HANDLER',
         homeArea: handlerAreas[i],
+        accessLevel: 'EMPLOYEE',
+        managerId: opLead.id,
       },
     });
   }
