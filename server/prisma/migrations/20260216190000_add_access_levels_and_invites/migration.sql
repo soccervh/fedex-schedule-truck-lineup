@@ -26,3 +26,6 @@ ALTER TABLE "User" ADD CONSTRAINT "User_managerId_fkey" FOREIGN KEY ("managerId"
 
 -- AddForeignKey
 ALTER TABLE "InviteToken" ADD CONSTRAINT "InviteToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Data migration: set existing MANAGER role users to HIGHEST_MANAGER access level
+UPDATE "User" SET "accessLevel" = 'HIGHEST_MANAGER' WHERE "role" = 'MANAGER';
