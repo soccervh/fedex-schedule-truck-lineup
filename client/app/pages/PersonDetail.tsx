@@ -8,6 +8,15 @@ import { ArrowLeft, Check, X, Save } from 'lucide-react';
 const roleLabels: Record<string, string> = {
   DRIVER: 'Driver', SWING: 'Swing', MANAGER: 'Manager', CSA: 'CSA', HANDLER: 'Handler',
 };
+const accessLevelLabels: Record<string, string> = {
+  HIGHEST_MANAGER: 'Highest Manager', OP_LEAD: 'OP Lead', TRUCK_MOVER: 'Truck Mover', EMPLOYEE: 'Employee',
+};
+const accessLevelColors: Record<string, string> = {
+  HIGHEST_MANAGER: 'bg-red-100 text-red-700',
+  OP_LEAD: 'bg-purple-100 text-purple-700',
+  TRUCK_MOVER: 'bg-orange-100 text-orange-700',
+  EMPLOYEE: 'bg-green-100 text-green-700',
+};
 const typeLabels: Record<string, string> = {
   VACATION_WEEK: 'Vacation Week', VACATION_DAY: 'Vacation Day', PERSONAL: 'Personal',
   HOLIDAY: 'Holiday', SICK: 'Sick', SCHEDULED_OFF: 'Scheduled Off',
@@ -35,6 +44,20 @@ export default function PersonDetail() {
   const [balanceForm, setBalanceForm] = useState<any>(null);
 
   // Initialize forms when data loads
+  // Fetch managers list for the manager dropdown
+  const { data: people } = useQuery({
+    queryKey: ['people'],
+    queryFn: async () => {
+      const res = await api.get('/people');
+      return res.data;
+    },
+    enabled: isManager,
+  });
+
+  const managers = people?.filter((p: any) =>
+    p.accessLevel === 'HIGHEST_MANAGER' || p.accessLevel === 'OP_LEAD'
+  ) || [];
+
   if (person && !infoForm) {
     setInfoForm({
       name: person.name,
@@ -43,6 +66,8 @@ export default function PersonDetail() {
       role: person.role,
       homeArea: person.homeArea,
       workSchedule: person.workSchedule,
+      accessLevel: person.accessLevel || 'EMPLOYEE',
+      managerId: person.managerId || '',
     });
     setBalanceForm({
       vacationWeeks: person.vacationWeeks,
@@ -132,7 +157,14 @@ export default function PersonDetail() {
         <ArrowLeft size={16} /> Back to People
       </Link>
 
-      <h1 className="text-2xl font-bold">{person.name}</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">{person.name}</h1>
+        {person.accessLevel && (
+          <span className={`px-2 py-1 text-xs rounded-full ${accessLevelColors[person.accessLevel] || ''}`}>
+            {accessLevelLabels[person.accessLevel] || person.accessLevel}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Person Info Card */}
@@ -211,6 +243,44 @@ export default function PersonDetail() {
                   <option value="MON_FRI">Mon - Fri</option>
                   <option value="TUE_SAT">Tue - Sat</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
+                {isManager ? (
+                  <select
+                    value={infoForm.accessLevel}
+                    onChange={(e) => setInfoForm({ ...infoForm, accessLevel: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="HIGHEST_MANAGER">Highest Manager</option>
+                    <option value="OP_LEAD">OP Lead</option>
+                    <option value="TRUCK_MOVER">Truck Mover</option>
+                    <option value="EMPLOYEE">Employee</option>
+                  </select>
+                ) : (
+                  <p className="px-3 py-2 text-sm text-gray-600">
+                    {accessLevelLabels[person.accessLevel] || person.accessLevel}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Primary Manager</label>
+                {isManager ? (
+                  <select
+                    value={infoForm.managerId}
+                    onChange={(e) => setInfoForm({ ...infoForm, managerId: e.target.value || null })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">None</option>
+                    {managers.map((m: any) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="px-3 py-2 text-sm text-gray-600">
+                    {person.manager?.name || 'None assigned'}
+                  </p>
+                )}
               </div>
               {isManager && (
                 <button
