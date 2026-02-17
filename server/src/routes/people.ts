@@ -78,6 +78,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
         workSchedule: true,
         accessLevel: true,
         managerId: true,
+        manager: { select: { id: true, name: true } },
         vacationWeeks: true,
         vacationDays: true,
         personalDays: true,

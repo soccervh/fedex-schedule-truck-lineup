@@ -32,7 +32,7 @@ export default function PersonDetail() {
   const { isManager } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: person, isLoading } = useQuery({
+  const { data: person, isLoading, error } = useQuery({
     queryKey: ['person', id],
     queryFn: async () => {
       const res = await api.get(`/people/${id}`);
@@ -109,8 +109,9 @@ export default function PersonDetail() {
     return <div className="text-center py-8 text-gray-500">Loading...</div>;
   }
 
-  if (!person) {
-    return <div className="text-center py-8 text-gray-500">Person not found</div>;
+  if (error || !person) {
+    const errMsg = (error as any)?.response?.data?.error || 'Person not found';
+    return <div className="text-center py-8 text-gray-500">{errMsg}</div>;
   }
 
   const balanceRows = [
