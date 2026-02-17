@@ -42,6 +42,13 @@ enum WorkSchedule {
   TUE_SAT
 }
 
+enum AccessLevel {
+  HIGHEST_MANAGER
+  OP_LEAD
+  TRUCK_MOVER
+  EMPLOYEE
+}
+
 enum TruckStatus {
   AVAILABLE
   ASSIGNED
@@ -66,10 +73,11 @@ enum RouteArea {
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
-  password  String
+  password  String?
   name      String
   phone     String?
   role      Role
+  accessLevel  AccessLevel  @default(EMPLOYEE)
   homeArea         HomeArea
   workSchedule     WorkSchedule @default(MON_FRI)
   vacationWeeks    Int          @default(0)
@@ -83,10 +91,15 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  managerId    String?
+  manager      User?    @relation("ManagerEmployees", fields: [managerId], references: [id])
+  employees    User[]   @relation("ManagerEmployees")
+
   assignments          Assignment[]
   templateAssignments  TemplateAssignment[]
   timeOffRequests      TimeOff[]
   facilityAssignments  FacilityAssignment[]
+  inviteTokens         InviteToken[]
 }
 
 model Belt {
@@ -105,6 +118,7 @@ model Spot {
   routeOverride Int?
 
   templateAssignments  TemplateAssignment[]
+
   assignments          Assignment[]
   homeTrucks           Truck[]
   truckAssignments     TruckSpotAssignment[]
@@ -248,4 +262,14 @@ model DailyBriefing {
   lateFreight  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model InviteToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
