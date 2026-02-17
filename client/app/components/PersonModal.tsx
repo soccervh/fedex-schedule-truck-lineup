@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { X } from 'lucide-react';
+import type { AccessLevel } from '../contexts/AuthContext';
 
 interface Person {
   id?: string;
@@ -11,12 +12,21 @@ interface Person {
   role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
   homeArea?: string;
   workSchedule?: string;
+  accessLevel?: AccessLevel;
+  managerId?: string;
 }
 
 interface PersonModalProps {
   person?: Person;
   onClose: () => void;
 }
+
+const accessLevelLabels: Record<string, string> = {
+  HIGHEST_MANAGER: 'Highest Manager',
+  OP_LEAD: 'OP Lead',
+  TRUCK_MOVER: 'Truck Mover',
+  EMPLOYEE: 'Employee',
+};
 
 export function PersonModal({ person, onClose }: PersonModalProps) {
   const queryClient = useQueryClient();
@@ -26,18 +36,44 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
     name: person?.name || '',
     email: person?.email || '',
     phone: person?.phone || '',
-    password: '',
     role: person?.role || 'DRIVER',
     homeArea: person?.homeArea || 'UNASSIGNED',
     workSchedule: person?.workSchedule || 'MON_FRI',
+    accessLevel: person?.accessLevel || 'EMPLOYEE' as AccessLevel,
+    managerId: person?.managerId || '',
   });
 
-  const createMutation = useMutation({
+  // Fetch people list for manager dropdown
+  const { data: allPeople } = useQuery({
+    queryKey: ['people'],
+    queryFn: async () => {
+      const res = await api.get('/people');
+      return res.data;
+    },
+  });
+
+  // Filter to only managers (HIGHEST_MANAGER or OP_LEAD access level)
+  const managerOptions = allPeople?.filter(
+    (p: any) => p.accessLevel === 'HIGHEST_MANAGER' || p.accessLevel === 'OP_LEAD'
+  ) || [];
+
+  const inviteMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return api.post('/people', data);
+      const payload: any = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        homeArea: data.homeArea,
+        workSchedule: data.workSchedule,
+        accessLevel: data.accessLevel,
+      };
+      if (data.phone) payload.phone = data.phone;
+      if (data.managerId) payload.managerId = data.managerId;
+      return api.post('/invites', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['people'] });
+      queryClient.invalidateQueries({ queryKey: ['invites', 'pending'] });
       onClose();
     },
   });
@@ -55,21 +91,23 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isEditing) {
-      const { password, email, ...updateData } = formData;
-      updateMutation.mutate(updateData);
+      const { email, ...updateData } = formData;
+      const payload: any = { ...updateData };
+      if (!payload.managerId) delete payload.managerId;
+      updateMutation.mutate(payload);
     } else {
-      createMutation.mutate(formData);
+      inviteMutation.mutate(formData);
     }
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = inviteMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">
-            {isEditing ? 'Edit Person' : 'Add Person'}
+            {isEditing ? 'Edit Person' : 'Invite Employee'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -91,32 +129,18 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
           </div>
 
           {!isEditing && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                />
-              </div>
-            </>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+                required
+              />
+            </div>
           )}
 
           <div>
@@ -175,12 +199,57 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
+            <select
+              value={formData.accessLevel}
+              onChange={(e) => setFormData({ ...formData, accessLevel: e.target.value as AccessLevel })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="HIGHEST_MANAGER">Highest Manager</option>
+              <option value="OP_LEAD">OP Lead</option>
+              <option value="TRUCK_MOVER">Truck Mover</option>
+              <option value="EMPLOYEE">Employee</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Manager</label>
+            <select
+              value={formData.managerId}
+              onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="">None</option>
+              {managerOptions.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({accessLevelLabels[m.accessLevel] || m.accessLevel})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {inviteMutation.isError && (
+            <div className="bg-red-50 text-red-600 p-3 rounded text-sm">
+              Failed to send invite. Please try again.
+            </div>
+          )}
+          {updateMutation.isError && (
+            <div className="bg-red-50 text-red-600 p-3 rounded text-sm">
+              Failed to update person. Please try again.
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isPending}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {isPending ? 'Saving...' : isEditing ? 'Update Person' : 'Add Person'}
+            {isPending
+              ? 'Saving...'
+              : isEditing
+              ? 'Update Person'
+              : 'Send Invite'}
           </button>
         </form>
       </div>
