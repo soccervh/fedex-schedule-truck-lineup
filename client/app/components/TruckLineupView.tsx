@@ -59,7 +59,7 @@ interface TruckLineupViewProps {
 import { useState } from 'react';
 
 const truckTypeLabel = (t?: string) => {
-  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER_VAN: 'Sprinter Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
+  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER: 'Sprinter', VAN: 'Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
   return t ? labels[t] || t : '';
 };
 
@@ -236,8 +236,10 @@ export function TruckLineupView({
   const [activeBeltTab, setActiveBeltTab] = useState(0);
   const [mobileDrawer, setMobileDrawer] = useState<'oos' | 'available' | null>(null);
 
-  // Order belts: D, C, B, A (left to right)
+  // Desktop: D, C, B, A (left to right, matching physical layout)
   const orderedBelts = [...belts].sort((a, b) => b.baseNumber - a.baseNumber);
+  // Mobile tabs: A, B, C, D (alphabetical)
+  const mobileBelts = [...belts].sort((a, b) => a.baseNumber - b.baseNumber);
 
   return (
     <div className="flex h-full gap-4">
@@ -321,7 +323,7 @@ export function TruckLineupView({
 
         {/* Belt tabs */}
         <div className="flex bg-gray-200 rounded-lg p-1 mb-3">
-          {orderedBelts.map((belt, idx) => (
+          {mobileBelts.map((belt, idx) => (
             <button
               key={belt.id}
               onClick={() => setActiveBeltTab(idx)}
@@ -350,19 +352,19 @@ export function TruckLineupView({
           )}
 
           {/* Belt column - shifts based on which panel is open */}
-          {orderedBelts[activeBeltTab] && (
+          {mobileBelts[activeBeltTab] && (
             <div className="flex-1 flex justify-center overflow-y-auto pb-4 min-w-[150px]">
               <BeltColumn
-                beltId={orderedBelts[activeBeltTab].id}
-                beltName={orderedBelts[activeBeltTab].name}
-                beltLetter={orderedBelts[activeBeltTab].letter}
-                baseNumber={orderedBelts[activeBeltTab].baseNumber}
-                spots={orderedBelts[activeBeltTab].spots}
-                onSpotClick={(spot) => onBeltSpotClick(spot, orderedBelts[activeBeltTab].id)}
+                beltId={mobileBelts[activeBeltTab].id}
+                beltName={mobileBelts[activeBeltTab].name}
+                beltLetter={mobileBelts[activeBeltTab].letter}
+                baseNumber={mobileBelts[activeBeltTab].baseNumber}
+                spots={mobileBelts[activeBeltTab].spots}
+                onSpotClick={(spot) => onBeltSpotClick(spot, mobileBelts[activeBeltTab].id)}
                 onSpotDoubleClick={onBeltDoubleClick}
                 isManager={isManager}
                 isDragEnabled={!!onTruckDropOnSpot}
-                onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, orderedBelts[activeBeltTab].id, truckNumber) : undefined}
+                onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, mobileBelts[activeBeltTab].id, truckNumber) : undefined}
                 showTruckInHeader={mobileDrawer !== null}
               />
             </div>

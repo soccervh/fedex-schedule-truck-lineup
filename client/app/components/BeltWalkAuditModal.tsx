@@ -39,6 +39,7 @@ interface SpotCheck {
   expectedTruckId: number | null;
   status: 'unchecked' | 'correct' | 'wrong';
   actualTruck: string;
+  confirmed: boolean;
 }
 
 type AuditStep = 'select-belt' | 'checklist' | 'summary';
@@ -59,6 +60,7 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
       expectedTruckId: spot.truckAssignment?.truck.id || null,
       status: spot.truckAssignment ? 'unchecked' : 'correct',
       actualTruck: '',
+      confirmed: false,
     }));
     setChecks(initialChecks);
     setSelectedBelt(belt);
@@ -83,9 +85,21 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
     setChecks(updated);
   };
 
+  const handleConfirmWrong = (index: number) => {
+    const updated = [...checks];
+    updated[index] = { ...updated[index], confirmed: true };
+    setChecks(updated);
+  };
+
+  const handleUnconfirm = (index: number) => {
+    const updated = [...checks];
+    updated[index] = { ...updated[index], confirmed: false };
+    setChecks(updated);
+  };
+
   const handleResetSpot = (index: number) => {
     const updated = [...checks];
-    updated[index] = { ...updated[index], status: 'unchecked', actualTruck: '' };
+    updated[index] = { ...updated[index], status: 'unchecked', actualTruck: '', confirmed: false };
     setChecks(updated);
   };
 
@@ -93,11 +107,11 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
   const allChecked = assignedChecks.every((c) => c.status !== 'unchecked');
   const wrongChecksComplete = checks
     .filter((c) => c.status === 'wrong')
-    .every((c) => c.actualTruck.trim() !== '');
+    .every((c) => c.confirmed && c.actualTruck.trim() !== '');
 
   const canSubmit = allChecked && wrongChecksComplete;
 
-  const mismatches = checks.filter((c) => c.status === 'wrong' && c.actualTruck.trim());
+  const mismatches = checks.filter((c) => c.status === 'wrong' && c.confirmed && c.actualTruck.trim());
 
   const fixSpotMutation = useMutation({
     mutationFn: async ({ truckNumber, spotId }: { truckNumber: string; spotId: number }) => {
@@ -143,7 +157,7 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
     }
   };
 
-  const orderedBelts = [...belts].sort((a, b) => b.baseNumber - a.baseNumber);
+  const orderedBelts = [...belts].sort((a, b) => a.baseNumber - b.baseNumber);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -259,14 +273,42 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
 
                   {check.status === 'wrong' && (
                     <div className="mt-2">
-                      <input
-                        type="text"
-                        value={check.actualTruck}
-                        onChange={(e) => handleActualTruckChange(index, e.target.value)}
-                        placeholder="Enter actual truck number"
-                        className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        autoFocus
-                      />
+                      {check.confirmed ? (
+                        <div className="flex items-center justify-between bg-red-100 rounded-md px-3 py-2">
+                          <span className="text-sm text-red-800">
+                            Actual: <strong>{check.actualTruck}</strong>
+                          </span>
+                          <button
+                            onClick={() => handleUnconfirm(index)}
+                            className="text-red-600 text-xs hover:underline"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="text"
+                            value={check.actualTruck}
+                            onChange={(e) => handleActualTruckChange(index, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && check.actualTruck.trim()) {
+                                handleConfirmWrong(index);
+                              }
+                            }}
+                            placeholder="Enter actual truck number"
+                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleConfirmWrong(index)}
+                            disabled={!check.actualTruck.trim()}
+                            className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 font-semibold text-sm"
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -276,12 +318,11 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
             <div className="p-4 border-t">
               <button
                 onClick={() => setStep('summary')}
-                disabled={!canSubmit}
-                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold"
+                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-semibold"
               >
                 {mismatches.length > 0
                   ? `View Keys Needed (${mismatches.length} mismatch${mismatches.length !== 1 ? 'es' : ''})`
-                  : 'Submit — All Correct'}
+                  : 'View Summary'}
               </button>
             </div>
           </>

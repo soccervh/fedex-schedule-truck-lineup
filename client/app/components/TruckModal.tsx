@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { X } from 'lucide-react';
-import { TRUCK_TYPE_LABELS, TruckType } from '../types/lineup';
+import type { TruckType } from '../types/lineup';
+import { TRUCK_TYPE_LABELS } from '../types/lineup';
 
 interface Truck {
   id?: number;
@@ -140,7 +141,6 @@ export function TruckModal({ truck, onClose }: TruckModalProps) {
               className="w-full px-3 py-2 border rounded-md"
             >
               <option value="AVAILABLE">Available</option>
-              <option value="ASSIGNED">Assigned</option>
               <option value="OUT_OF_SERVICE">Out of Service</option>
             </select>
           </div>
