@@ -8,6 +8,7 @@ import { BeltDetailView } from '../components/BeltDetailView';
 import { TruckModal } from '../components/TruckModal';
 import { TruckAssignmentModal } from '../components/TruckAssignmentModal';
 import { OutOfServiceTruckModal } from '../components/OutOfServiceTruckModal';
+import { BeltWalkAuditModal } from '../components/BeltWalkAuditModal';
 import type { Belt, BeltSpot, Truck } from '../types/lineup';
 
 export default function TruckLineupPage() {
@@ -23,6 +24,7 @@ export default function TruckLineupPage() {
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [truckAssignmentSpot, setTruckAssignmentSpot] = useState<{ spot: BeltSpot; beltLetter: string } | null>(null);
   const [outOfServiceTruck, setOutOfServiceTruck] = useState<Truck | null>(null);
+  const [walkBeltOpen, setWalkBeltOpen] = useState(false);
 
   const { data: beltsData, isLoading } = useQuery({
     queryKey: ['all-belts', selectedDate],
@@ -223,9 +225,19 @@ export default function TruckLineupPage() {
     <div className="flex h-[calc(100vh-120px)]">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold">
-            {detailBelt ? detailBelt.name : 'Truck Lineup'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold">
+              {detailBelt ? detailBelt.name : 'Truck Lineup'}
+            </h1>
+            {isManager && !detailBelt && (
+              <button
+                onClick={() => setWalkBeltOpen(true)}
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+              >
+                Walk Belt
+              </button>
+            )}
+          </div>
           <input
             type="date"
             value={selectedDate}
@@ -440,6 +452,14 @@ export default function TruckLineupPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {walkBeltOpen && beltsData && (
+        <BeltWalkAuditModal
+          belts={beltsData}
+          date={selectedDate}
+          onClose={() => setWalkBeltOpen(false)}
+        />
       )}
     </div>
   );
