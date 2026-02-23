@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
-import { X, Truck } from 'lucide-react';
+import { X, Truck, Check } from 'lucide-react';
 
 interface Spot {
   id: number;
@@ -34,6 +34,8 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
   const [selectedUserId, setSelectedUserId] = useState(
     spot.assignment?.user.id || ''
   );
+  const [routeSaved, setRouteSaved] = useState(false);
+  const [areaSaved, setAreaSaved] = useState(false);
 
   const { data: people } = useQuery({
     queryKey: ['people'],
@@ -98,6 +100,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spot-routes', spot.id] });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      setAreaSaved(true);
+      setTimeout(() => setAreaSaved(false), 2000);
     },
   });
 
@@ -108,6 +113,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spot-routes', spot.id] });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      setRouteSaved(true);
+      setTimeout(() => setRouteSaved(false), 2000);
     },
   });
 
@@ -148,10 +156,17 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Route Section */}
+          {/* Route & Area Section - saves automatically */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 uppercase">Route & Area</span>
+              <span className="text-xs text-gray-400">Changes save automatically</span>
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Route</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Route
+                {routeSaved && <span className="ml-2 text-green-600 text-xs inline-flex items-center gap-0.5"><Check size={12} /> Saved</span>}
+              </label>
               <select
                 value={spotRoutes?.[0]?.id || ''}
                 onChange={(e) => {
@@ -178,7 +193,10 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             </div>
             {spotRoutes?.[0] && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Area</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign Area
+                  {areaSaved && <span className="ml-2 text-green-600 text-xs inline-flex items-center gap-0.5"><Check size={12} /> Saved</span>}
+                </label>
                 <select
                   value={spotRoutes[0].loadLocation || ''}
                   onChange={(e) => loadLocationMutation.mutate({
@@ -212,7 +230,10 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             Change Truck
           </button>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Person Assignment Section - optional */}
+          <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+            <span className="text-xs font-semibold text-gray-500 uppercase">Person Assignment (Optional)</span>
+
             {spot.assignment?.needsCoverage && (
               <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
                 <strong>{spot.assignment.user.name}</strong> is off. Select a
@@ -220,52 +241,65 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {spot.assignment?.needsCoverage ? 'Swing Driver' : 'Assign Person'}
-              </label>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="">No person assigned</option>
-                {spot.assignment?.needsCoverage ? (
-                  swingDrivers?.map((driver: any) => (
-                    <option key={driver.id} value={driver.id}>
-                      {driver.name}
-                    </option>
-                  ))
-                ) : (
-                  people?.map((person: any) => (
-                    <option key={person.id} value={person.id}>
-                      {person.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {spot.assignment?.needsCoverage ? 'Swing Driver' : 'Assign Person'}
+                </label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="">No person assigned</option>
+                  {spot.assignment?.needsCoverage ? (
+                    swingDrivers?.map((driver: any) => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.name}
+                      </option>
+                    ))
+                  ) : (
+                    people?.map((person: any) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
 
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={assignMutation.isPending || !selectedUserId}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {assignMutation.isPending ? 'Saving...' : selectedUserId ? 'Assign Person' : 'Select a person to assign'}
-              </button>
+              {selectedUserId && (
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={assignMutation.isPending}
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {assignMutation.isPending ? 'Saving...' : 'Assign Person'}
+                  </button>
+                </div>
+              )}
               {spot.assignment && !spot.assignment.needsCoverage && (
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
-                  className="px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50"
+                  className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50"
                 >
-                  Remove
+                  Remove Person
                 </button>
               )}
-            </div>
-          </form>
+            </form>
+          </div>
+
+          {/* Done Button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full bg-gray-100 text-gray-700 py-2 rounded-md hover:bg-gray-200 font-medium"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>

@@ -69,8 +69,9 @@ export function TruckModal({ truck, onClose }: TruckModalProps) {
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const { status: _status, ...rest } = data;
       return api.patch(`/trucks/${truck?.id}`, {
-        ...data,
+        ...rest,
         homeSpotId: data.homeSpotId || null,
       });
     },
@@ -129,20 +130,6 @@ export function TruckModal({ truck, onClose }: TruckModalProps) {
               placeholder="e.g., T101"
               required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="AVAILABLE">Available</option>
-              <option value="OUT_OF_SERVICE">Out of Service</option>
-            </select>
           </div>
 
           <div>

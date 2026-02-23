@@ -3,6 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
+client/build/
 
 # Environment files
 .env
@@ -22,6 +23,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# React Router
+.react-router/
 
 # Testing
 coverage/

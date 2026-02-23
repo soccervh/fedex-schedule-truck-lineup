@@ -50,7 +50,7 @@ interface SpotCardCompactProps {
 }
 
 const truckTypeLabel = (t?: string) => {
-  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER_VAN: 'Sprinter Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
+  const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER: 'Sprinter', VAN: 'Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
   return t ? labels[t] || t : '';
 };
 
