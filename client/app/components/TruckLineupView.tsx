@@ -1,14 +1,15 @@
 import { BeltColumn } from './BeltColumn';
-import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
 interface TruckData {
   id: number;
   number: string;
-  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE' | 'RETIRED';
   truckType?: string;
   note?: string;
+  retiredAt?: string | null;
 }
 
 interface BeltSpot {
@@ -45,12 +46,14 @@ interface TruckLineupViewProps {
   belts: Belt[];
   availableTrucks: TruckData[];
   outOfServiceTrucks: TruckData[];
+  retiredTrucks?: TruckData[];
   onBeltSpotClick: (spot: BeltSpot, beltId: number) => void;
   onBeltDoubleClick: (beltId: number) => void;
   isManager: boolean;
   onAddTruck?: () => void;
   onTruckClick?: (truck: TruckData) => void;
   onOutOfServiceTruckClick?: (truck: TruckData) => void;
+  onRetiredTruckClick?: (truck: TruckData) => void;
   onTruckDropOnSpot?: (spot: BeltSpot, beltId: number, truckNumber: string) => void;
   onTruckDropOnAvailable?: (truckNumber: string) => void;
   onTruckDropOnOutOfService?: (truckNumber: string) => void;
@@ -219,22 +222,109 @@ function MobileTruckPanel({
   );
 }
 
+function RetiredTrucksPanel({
+  trucks,
+  onTruckClick,
+}: {
+  trucks: TruckData[];
+  onTruckClick?: (truck: TruckData) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="w-48 bg-gray-50 border border-gray-200 rounded-lg flex flex-col">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="bg-gray-500 text-white text-center py-2 font-semibold rounded-t-lg flex items-center justify-center gap-2"
+      >
+        Retired ({trucks.length})
+        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {expanded && (
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          {trucks.length === 0 ? (
+            <div className="text-gray-400 text-center text-sm py-4">None</div>
+          ) : (
+            trucks.map((truck) => (
+              <div
+                key={truck.id}
+                onClick={() => onTruckClick?.(truck)}
+                className={`bg-gray-100 text-gray-800 rounded p-2 text-sm ${onTruckClick ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+              >
+                <div className="font-semibold">{truck.number}</div>
+                {truck.retiredAt && (
+                  <div className="text-xs text-gray-500">
+                    Retired: {new Date(truck.retiredAt).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileRetiredPanel({
+  trucks,
+  onClose,
+  onTruckClick,
+}: {
+  trucks: TruckData[];
+  onClose: () => void;
+  onTruckClick?: (truck: TruckData) => void;
+}) {
+  return (
+    <div className="w-36 shrink-0 bg-gray-50 border border-gray-200 rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-gray-500 text-white py-2 px-3 font-semibold flex items-center justify-between text-sm">
+        <span>Retired</span>
+        <button onClick={onClose} className="p-0.5">
+          <X size={16} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        {trucks.length === 0 ? (
+          <div className="text-gray-400 text-center text-xs py-3">None</div>
+        ) : (
+          trucks.map((truck) => (
+            <div
+              key={truck.id}
+              onClick={() => onTruckClick?.(truck)}
+              className={`bg-gray-100 text-gray-800 rounded p-2 text-sm ${onTruckClick ? 'active:opacity-70' : ''}`}
+            >
+              <div className="font-semibold">{truck.number}</div>
+              {truck.retiredAt && (
+                <div className="text-xs text-gray-500">
+                  {new Date(truck.retiredAt).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TruckLineupView({
   belts,
   availableTrucks,
   outOfServiceTrucks,
+  retiredTrucks = [],
   onBeltSpotClick,
   onBeltDoubleClick,
   isManager,
   onAddTruck,
   onTruckClick,
   onOutOfServiceTruckClick,
+  onRetiredTruckClick,
   onTruckDropOnSpot,
   onTruckDropOnAvailable,
   onTruckDropOnOutOfService,
 }: TruckLineupViewProps) {
   const [activeBeltTab, setActiveBeltTab] = useState(0);
-  const [mobileDrawer, setMobileDrawer] = useState<'oos' | 'available' | null>(null);
+  const [mobileDrawer, setMobileDrawer] = useState<'oos' | 'available' | 'retired' | null>(null);
 
   // Desktop: D, C, B, A (left to right, matching physical layout)
   const orderedBelts = [...belts].sort((a, b) => b.baseNumber - a.baseNumber);
@@ -280,8 +370,8 @@ export function TruckLineupView({
         <div className="text-center text-sm text-gray-500 mt-2">EAST</div>
       </div>
 
-      {/* Right sidebar - Available/Spare (desktop only) */}
-      <div className="hidden md:flex">
+      {/* Right sidebar - Available/Spare + Retired (desktop only) */}
+      <div className="hidden md:flex md:flex-col gap-4 overflow-y-auto">
         <TruckSidebar
           title="Available (Spare)"
           trucks={availableTrucks}
@@ -289,6 +379,10 @@ export function TruckLineupView({
           onAddTruck={isManager ? onAddTruck : undefined}
           onTruckClick={isManager ? onTruckClick : undefined}
           onTruckDrop={isManager ? onTruckDropOnAvailable : undefined}
+        />
+        <RetiredTrucksPanel
+          trucks={retiredTrucks}
+          onTruckClick={isManager ? onRetiredTruckClick : undefined}
         />
       </div>
 
@@ -308,6 +402,18 @@ export function TruckLineupView({
             OOS ({outOfServiceTrucks.length})
           </button>
           <div className="flex-1" />
+          {retiredTrucks.length > 0 && (
+            <button
+              onClick={() => setMobileDrawer(mobileDrawer === 'retired' ? null : 'retired')}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium ${
+                mobileDrawer === 'retired'
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Ret ({retiredTrucks.length})
+            </button>
+          )}
           <button
             onClick={() => setMobileDrawer(mobileDrawer === 'available' ? null : 'available')}
             className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium ${
@@ -368,6 +474,15 @@ export function TruckLineupView({
                 showTruckInHeader={mobileDrawer !== null}
               />
             </div>
+          )}
+
+          {/* Retired panel */}
+          {mobileDrawer === 'retired' && (
+            <MobileRetiredPanel
+              trucks={retiredTrucks}
+              onClose={() => setMobileDrawer(null)}
+              onTruckClick={isManager ? onRetiredTruckClick : undefined}
+            />
           )}
 
           {/* Available panel on the right */}

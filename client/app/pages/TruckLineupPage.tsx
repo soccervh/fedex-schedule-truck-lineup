@@ -8,8 +8,9 @@ import { BeltDetailView } from '../components/BeltDetailView';
 import { TruckModal } from '../components/TruckModal';
 import { TruckAssignmentModal } from '../components/TruckAssignmentModal';
 import { OutOfServiceTruckModal } from '../components/OutOfServiceTruckModal';
+import { AvailableTruckModal } from '../components/AvailableTruckModal';
 import { BeltWalkAuditModal } from '../components/BeltWalkAuditModal';
-import type { Belt, BeltSpot, Truck } from '../types/lineup';
+import type { Belt, BeltSpot, Truck, TruckData } from '../types/lineup';
 
 export default function TruckLineupPage() {
   const { isManager } = useAuth();
@@ -24,6 +25,8 @@ export default function TruckLineupPage() {
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [truckAssignmentSpot, setTruckAssignmentSpot] = useState<{ spot: BeltSpot; beltLetter: string } | null>(null);
   const [outOfServiceTruck, setOutOfServiceTruck] = useState<Truck | null>(null);
+  const [availableTruck, setAvailableTruck] = useState<Truck | null>(null);
+  const [restoreTruck, setRestoreTruck] = useState<TruckData | null>(null);
   const [walkBeltOpen, setWalkBeltOpen] = useState(false);
 
   const { data: beltsData, isLoading } = useQuery({
@@ -39,6 +42,25 @@ export default function TruckLineupPage() {
     queryFn: async () => {
       const res = await api.get('/trucks');
       return res.data as Truck[];
+    },
+  });
+
+  const { data: retiredTrucksData } = useQuery({
+    queryKey: ['retired-trucks'],
+    queryFn: async () => {
+      const res = await api.get('/trucks/status/RETIRED');
+      return res.data as TruckData[];
+    },
+  });
+
+  const unretireMutation = useMutation({
+    mutationFn: async (truckId: number) => {
+      return api.post('/trucks/unretire', { truckId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] });
+      queryClient.invalidateQueries({ queryKey: ['retired-trucks'] });
+      setRestoreTruck(null);
     },
   });
 
@@ -82,8 +104,19 @@ export default function TruckLineupPage() {
   };
 
   const handleTruckClick = (truck: Truck) => {
-    setSelectedTruck(truck);
-    setTruckModalOpen(true);
+    setAvailableTruck(truck);
+  };
+
+  const handleEditAvailableTruck = () => {
+    if (availableTruck) {
+      setSelectedTruck(availableTruck);
+      setTruckModalOpen(true);
+      setAvailableTruck(null);
+    }
+  };
+
+  const handleRetiredTruckClick = (truck: TruckData) => {
+    setRestoreTruck(truck);
   };
 
   const handleOutOfServiceTruckClick = (truck: Truck) => {
@@ -220,29 +253,38 @@ export default function TruckLineupPage() {
 
   const availableTrucks = trucksData?.filter(t => t.status === 'AVAILABLE') || [];
   const outOfServiceTrucks = trucksData?.filter(t => t.status === 'OUT_OF_SERVICE') || [];
+  const retiredTrucks = retiredTrucksData || [];
 
   return (
     <div className="flex h-[calc(100vh-120px)]">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold">
-              {detailBelt ? detailBelt.name : 'Truck Lineup'}
-            </h1>
-            {isManager && !detailBelt && (
-              <button
-                onClick={() => setWalkBeltOpen(true)}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-              >
-                Walk Belt
-              </button>
-            )}
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-semibold">
+                {detailBelt ? detailBelt.name : 'Truck Lineup'}
+              </h1>
+              {isManager && !detailBelt && (
+                <button
+                  onClick={() => setWalkBeltOpen(true)}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                >
+                  Walk Belt
+                </button>
+              )}
+            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="hidden md:block px-3 py-2 border rounded-md"
+            />
           </div>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+            className="md:hidden mt-2 w-full px-3 py-2 border rounded-md"
           />
         </div>
 
@@ -267,12 +309,14 @@ export default function TruckLineupPage() {
                 belts={beltsData}
                 availableTrucks={availableTrucks}
                 outOfServiceTrucks={outOfServiceTrucks}
+                retiredTrucks={retiredTrucks}
                 onBeltSpotClick={handleTruckLineupSpotClick}
                 onBeltDoubleClick={handleBeltDoubleClick}
                 isManager={isManager}
                 onAddTruck={handleAddTruck}
                 onTruckClick={handleTruckClick}
                 onOutOfServiceTruckClick={handleOutOfServiceTruckClick}
+                onRetiredTruckClick={handleRetiredTruckClick}
                 onTruckDropOnSpot={isManager ? handleTruckDropOnSpot : undefined}
                 onTruckDropOnAvailable={isManager ? handleTruckDropOnAvailable : undefined}
                 onTruckDropOnOutOfService={isManager ? handleTruckDropOnOutOfService : undefined}
@@ -329,7 +373,59 @@ export default function TruckLineupPage() {
           date={selectedDate}
           availableTrucks={availableTrucks}
           onClose={() => setTruckAssignmentSpot(null)}
+          onEditTruck={(truckId) => {
+            const truck = trucksData?.find(t => t.id === truckId);
+            if (truck) {
+              setTruckAssignmentSpot(null);
+              setSelectedTruck(truck);
+              setTruckModalOpen(true);
+            }
+          }}
         />
+      )}
+
+      {availableTruck && (
+        <AvailableTruckModal
+          truck={availableTruck}
+          date={selectedDate}
+          onClose={() => setAvailableTruck(null)}
+          onEditTruck={handleEditAvailableTruck}
+        />
+      )}
+
+      {restoreTruck && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+              <span className="font-semibold text-lg">Restore Truck</span>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-4">
+              <p className="text-lg font-semibold text-gray-800">
+                Restore truck {restoreTruck.number} to Available?
+              </p>
+              <p className="text-gray-600 mt-2">
+                This will move the truck back to the active fleet.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRestoreTruck(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => unretireMutation.mutate(restoreTruck.id)}
+                disabled={unretireMutation.isPending}
+                className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {unretireMutation.isPending ? 'Restoring...' : 'Yes, Restore'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {outOfServiceTruck && beltsData && (

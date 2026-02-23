@@ -53,12 +53,14 @@ enum TruckStatus {
   AVAILABLE
   ASSIGNED
   OUT_OF_SERVICE
+  RETIRED
 }
 
 enum TruckType {
   REACH
   NINE_HUNDRED
-  SPRINTER_VAN
+  SPRINTER
+  VAN
   RENTAL
   UNKNOWN
 }
@@ -211,6 +213,7 @@ model Truck {
   homeSpotId      Int?
   homeSpot        Spot?                 @relation(fields: [homeSpotId], references: [id])
   note            String?
+  retiredAt       DateTime?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   spotAssignments TruckSpotAssignment[]

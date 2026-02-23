@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { X, Check, XCircle, Key, ArrowLeft, ClipboardCheck } from 'lucide-react';
+import { X, Check, XCircle, Key, ArrowLeft, ClipboardCheck, CircleOff, ArrowUpDown } from 'lucide-react';
 
 interface TruckData {
   id: number;
@@ -37,7 +37,7 @@ interface SpotCheck {
   spotName: string;
   expectedTruck: string | null;
   expectedTruckId: number | null;
-  status: 'unchecked' | 'correct' | 'wrong';
+  status: 'unchecked' | 'correct' | 'wrong' | 'empty';
   actualTruck: string;
   confirmed: boolean;
 }
@@ -50,6 +50,8 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
   const [selectedBelt, setSelectedBelt] = useState<Belt | null>(null);
   const [checks, setChecks] = useState<SpotCheck[]>([]);
   const [fixingAll, setFixingAll] = useState(false);
+  const [switchedSpots, setSwitchedSpots] = useState<Set<number>>(new Set());
+  const [reversed, setReversed] = useState(false);
 
   const handleSelectBelt = (belt: Belt) => {
     const sortedSpots = [...belt.spots].sort((a, b) => a.number - b.number);
@@ -76,6 +78,12 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
   const handleMarkWrong = (index: number) => {
     const updated = [...checks];
     updated[index] = { ...updated[index], status: 'wrong' };
+    setChecks(updated);
+  };
+
+  const handleMarkEmpty = (index: number) => {
+    const updated = [...checks];
+    updated[index] = { ...updated[index], status: 'empty', actualTruck: '', confirmed: true };
     setChecks(updated);
   };
 
@@ -112,6 +120,7 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
   const canSubmit = allChecked && wrongChecksComplete;
 
   const mismatches = checks.filter((c) => c.status === 'wrong' && c.confirmed && c.actualTruck.trim());
+  const emptySpots = checks.filter((c) => c.status === 'empty' && c.expectedTruck);
 
   const fixSpotMutation = useMutation({
     mutationFn: async ({ truckNumber, spotId }: { truckNumber: string; spotId: number }) => {
@@ -207,8 +216,22 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
         {/* Checklist */}
         {step === 'checklist' && (
           <>
+            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+              <span className="text-sm text-gray-500">
+                {assignedChecks.filter(c => c.status !== 'unchecked').length}/{assignedChecks.length} checked
+              </span>
+              <button
+                onClick={() => setReversed(!reversed)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                <ArrowUpDown size={14} />
+                {reversed ? 'High → Low' : 'Low → High'}
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {checks.map((check, index) => (
+              {(reversed ? [...checks].reverse() : checks).map((check, displayIndex) => {
+                const index = reversed ? checks.length - 1 - displayIndex : displayIndex;
+                return (
                 <div
                   key={check.spotId}
                   className={`border rounded-lg p-3 ${
@@ -218,6 +241,8 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                       ? 'bg-green-50 border-green-200'
                       : check.status === 'wrong'
                       ? 'bg-red-50 border-red-200'
+                      : check.status === 'empty'
+                      ? 'bg-amber-50 border-amber-200'
                       : 'bg-white border-gray-200'
                   }`}
                 >
@@ -243,6 +268,13 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                           <Check size={20} />
                         </button>
                         <button
+                          onClick={() => handleMarkEmpty(index)}
+                          className="p-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
+                          title="Spot is empty"
+                        >
+                          <CircleOff size={20} />
+                        </button>
+                        <button
                           onClick={() => handleMarkWrong(index)}
                           className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                           title="Wrong truck"
@@ -258,6 +290,15 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                         className="text-green-600 font-semibold text-sm hover:underline"
                       >
                         ✓ Correct
+                      </button>
+                    )}
+
+                    {check.status === 'empty' && check.expectedTruck && (
+                      <button
+                        onClick={() => handleResetSpot(index)}
+                        className="text-amber-600 font-semibold text-sm hover:underline"
+                      >
+                        Empty — needs key
                       </button>
                     )}
 
@@ -312,7 +353,8 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             <div className="p-4 border-t">
@@ -320,8 +362,8 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                 onClick={() => setStep('summary')}
                 className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-semibold"
               >
-                {mismatches.length > 0
-                  ? `View Keys Needed (${mismatches.length} mismatch${mismatches.length !== 1 ? 'es' : ''})`
+                {mismatches.length + emptySpots.length > 0
+                  ? `View Keys Needed (${mismatches.length + emptySpots.length} issue${mismatches.length + emptySpots.length !== 1 ? 's' : ''})`
                   : 'View Summary'}
               </button>
             </div>
@@ -332,7 +374,7 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
         {step === 'summary' && (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {mismatches.length === 0 ? (
+              {mismatches.length === 0 && emptySpots.length === 0 ? (
                 <div className="text-center py-8">
                   <Check size={48} className="mx-auto text-green-500 mb-3" />
                   <p className="text-xl font-semibold text-green-700">All trucks are correct!</p>
@@ -343,34 +385,100 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                   <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <Key size={20} />
                     <span className="font-semibold">
-                      Keys needed for {mismatches.length} mismatch{mismatches.length !== 1 ? 'es' : ''}:
+                      Keys needed for {mismatches.length + emptySpots.length} spot{mismatches.length + emptySpots.length !== 1 ? 's' : ''}
                     </span>
                   </div>
 
-                  {mismatches.map((m) => (
-                    <div key={m.spotId} className="border border-red-200 rounded-lg p-4 bg-red-50">
-                      <p className="font-semibold text-gray-800">{m.spotName}</p>
-                      <div className="mt-2 space-y-1 text-sm">
-                        <p>
-                          <span className="text-red-600">Found:</span>{' '}
-                          <strong>{m.actualTruck}</strong>
-                          <span className="text-gray-500 ml-1">(need key to move it out)</span>
-                        </p>
-                        <p>
-                          <span className="text-green-600">Expected:</span>{' '}
-                          <strong>{m.expectedTruck}</strong>
-                          <span className="text-gray-500 ml-1">(need key to move it here)</span>
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleFixSpot(m)}
-                        disabled={fixSpotMutation.isPending}
-                        className="mt-3 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        Fix in System
-                      </button>
-                    </div>
-                  ))}
+                  {emptySpots.length > 0 && (
+                    <>
+                      <h3 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">Empty Spots — Need keys to deliver truck</h3>
+                      {emptySpots.map((m) => (
+                        <div
+                          key={m.spotId}
+                          className="border border-amber-200 bg-amber-50 rounded-lg p-4"
+                        >
+                          <p className="font-semibold text-gray-800">{m.spotName}</p>
+                          <div className="mt-2 text-sm">
+                            <p>
+                              <span className="text-amber-600">Expected:</span>{' '}
+                              <strong>{m.expectedTruck}</strong>
+                              <span className="text-gray-500 ml-1">— need key to bring it here</span>
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {mismatches.length > 0 && (
+                    <>
+                      <h3 className="font-semibold text-red-800 text-sm uppercase tracking-wide">Wrong Truck — Need keys to switch</h3>
+                      {mismatches.map((m) => {
+                        const isSwitched = switchedSpots.has(m.spotId);
+                        return (
+                          <div
+                            key={m.spotId}
+                            className={`border rounded-lg p-4 ${
+                              isSwitched
+                                ? 'border-green-200 bg-green-50 opacity-75'
+                                : 'border-red-200 bg-red-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold text-gray-800">{m.spotName}</p>
+                              {isSwitched && (
+                                <span className="text-green-700 text-sm font-semibold flex items-center gap-1">
+                                  <Check size={16} /> Switched
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 space-y-1 text-sm">
+                              <p>
+                                <span className="text-red-600">Found:</span>{' '}
+                                <strong>{m.actualTruck}</strong>
+                                <span className="text-gray-500 ml-1">(need key to move it out)</span>
+                              </p>
+                              <p>
+                                <span className="text-green-600">Expected:</span>{' '}
+                                <strong>{m.expectedTruck}</strong>
+                                <span className="text-gray-500 ml-1">(need key to move it here)</span>
+                              </p>
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              {!isSwitched ? (
+                                <>
+                                  <button
+                                    onClick={() => setSwitchedSpots(prev => new Set(prev).add(m.spotId))}
+                                    className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                                  >
+                                    Mark Switched
+                                  </button>
+                                  <button
+                                    onClick={() => handleFixSpot(m)}
+                                    disabled={fixSpotMutation.isPending}
+                                    className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                                  >
+                                    Fix in System
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => setSwitchedSpots(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(m.spotId);
+                                    return next;
+                                  })}
+                                  className="px-4 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-md hover:bg-gray-100"
+                                >
+                                  Undo
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </>
               )}
             </div>

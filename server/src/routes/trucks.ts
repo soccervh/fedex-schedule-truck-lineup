@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', authenticate, async (req, res) => {
   try {
     const trucks = await prisma.truck.findMany({
+      where: { status: { not: 'RETIRED' } },
       include: {
         homeSpot: {
           include: {
@@ -28,14 +29,14 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/status/:status', authenticate, async (req, res) => {
   try {
     const status = req.params.status as string;
-    const validStatuses = ['AVAILABLE', 'ASSIGNED', 'OUT_OF_SERVICE'];
+    const validStatuses = ['AVAILABLE', 'ASSIGNED', 'OUT_OF_SERVICE', 'RETIRED'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
     const trucks = await prisma.truck.findMany({
-      where: { status: status as 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE' },
+      where: { status: status as 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE' | 'RETIRED' },
       orderBy: { number: 'asc' },
     });
     res.json(trucks);
@@ -108,19 +109,95 @@ router.patch('/:id', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req
   }
 });
 
-// Delete a truck
+// Delete a truck (admin fallback - removes spot assignments first)
 router.delete('/:id', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {
-    const id = req.params.id as string;
+    const id = parseInt(req.params.id as string, 10);
+
+    await prisma.truckSpotAssignment.deleteMany({
+      where: { truckId: id },
+    });
 
     await prisma.truck.delete({
-      where: { id: parseInt(id, 10) },
+      where: { id },
     });
 
     res.json({ success: true });
   } catch (error) {
     console.error('Delete truck error:', error);
     res.status(500).json({ error: 'Failed to delete truck' });
+  }
+});
+
+// Retire a truck (soft-delete)
+router.post('/retire', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
+  try {
+    const { truckId, date } = req.body;
+
+    if (!truckId) {
+      return res.status(400).json({ error: 'truckId is required' });
+    }
+
+    const truck = await prisma.truck.findUnique({
+      where: { id: parseInt(truckId, 10) },
+    });
+
+    if (!truck) {
+      return res.status(404).json({ error: 'Truck not found' });
+    }
+
+    // Remove any spot assignment for this date if provided
+    if (date) {
+      await prisma.truckSpotAssignment.deleteMany({
+        where: {
+          truckId: parseInt(truckId, 10),
+          date: new Date(date),
+        },
+      });
+    }
+
+    const updatedTruck = await prisma.truck.update({
+      where: { id: parseInt(truckId, 10) },
+      data: { status: 'RETIRED', retiredAt: new Date() },
+    });
+
+    res.json(updatedTruck);
+  } catch (error) {
+    console.error('Retire truck error:', error);
+    res.status(500).json({ error: 'Failed to retire truck' });
+  }
+});
+
+// Unretire a truck
+router.post('/unretire', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
+  try {
+    const { truckId } = req.body;
+
+    if (!truckId) {
+      return res.status(400).json({ error: 'truckId is required' });
+    }
+
+    const truck = await prisma.truck.findUnique({
+      where: { id: parseInt(truckId, 10) },
+    });
+
+    if (!truck) {
+      return res.status(404).json({ error: 'Truck not found' });
+    }
+
+    if (truck.status !== 'RETIRED') {
+      return res.status(400).json({ error: 'Truck is not retired' });
+    }
+
+    const updatedTruck = await prisma.truck.update({
+      where: { id: parseInt(truckId, 10) },
+      data: { status: 'AVAILABLE', retiredAt: null },
+    });
+
+    res.json(updatedTruck);
+  } catch (error) {
+    console.error('Unretire truck error:', error);
+    res.status(500).json({ error: 'Failed to unretire truck' });
   }
 });
 

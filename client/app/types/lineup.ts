@@ -1,13 +1,14 @@
 export type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 
-export type TruckType = 'REACH' | 'NINE_HUNDRED' | 'SPRINTER_VAN' | 'RENTAL' | 'UNKNOWN';
+export type TruckType = 'REACH' | 'NINE_HUNDRED' | 'SPRINTER' | 'VAN' | 'RENTAL' | 'UNKNOWN';
 
 export interface TruckData {
   id: number;
   number: string;
-  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE' | 'RETIRED';
   truckType: TruckType;
   note?: string;
+  retiredAt?: string | null;
 }
 
 export interface BeltSpot {
@@ -68,9 +69,10 @@ export interface FacilityArea {
 export interface Truck {
   id: number;
   number: string;
-  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
+  status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE' | 'RETIRED';
   truckType: TruckType;
   note?: string;
+  retiredAt?: string | null;
   homeSpotId?: number | null;
   homeSpot?: {
     id: number;
@@ -91,7 +93,8 @@ export interface SwingDriver {
 export const TRUCK_TYPE_LABELS: Record<TruckType, string> = {
   REACH: 'Reach',
   NINE_HUNDRED: '900',
-  SPRINTER_VAN: 'Sprinter Van',
+  SPRINTER: 'Sprinter',
+  VAN: 'Van',
   RENTAL: 'Rental',
   UNKNOWN: 'Unknown',
 };

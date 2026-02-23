@@ -405,25 +405,88 @@ async function main() {
   }
   console.log(`Created ${timeOffDrivers.length} time-off entries for today`);
 
-  // Create sample trucks
-  const trucks = [
-    { number: 'T101', status: 'AVAILABLE' as const },
-    { number: 'T102', status: 'AVAILABLE' as const },
-    { number: 'T103', status: 'AVAILABLE' as const },
-    { number: 'T104', status: 'ASSIGNED' as const },
-    { number: 'T105', status: 'ASSIGNED' as const },
-    { number: 'T106', status: 'OUT_OF_SERVICE' as const, note: 'Engine repair' },
-    { number: 'T107', status: 'OUT_OF_SERVICE' as const, note: 'Brake issue' },
-    { number: 'T201', status: 'AVAILABLE' as const },
-    { number: 'T202', status: 'ASSIGNED' as const },
-    { number: 'T203', status: 'AVAILABLE' as const },
+  // Create trucks: one per spot (128 assigned) + 8 available spares + 4 out of service = 140 total
+  const allSpotsForTrucks = await prisma.spot.findMany({
+    include: { belt: true },
+    orderBy: [{ beltId: 'asc' }, { number: 'asc' }],
+  });
+
+  const truckTypes = ['REACH', 'NINE_HUNDRED', 'SPRINTER', 'VAN', 'RENTAL'] as const;
+  let truckCount = 0;
+
+  // Create a truck for each spot and assign it
+  for (const spot of allSpotsForTrucks) {
+    const truckNumber = `T${spot.belt.baseNumber + spot.number}`;
+    const truckType = truckTypes[truckCount % truckTypes.length];
+    const truck = await prisma.truck.create({
+      data: {
+        number: truckNumber,
+        status: 'ASSIGNED',
+        truckType,
+        homeSpotId: spot.id,
+      },
+    });
+
+    // Create spot assignment for today
+    await prisma.truckSpotAssignment.create({
+      data: {
+        truckId: truck.id,
+        spotId: spot.id,
+        date: today,
+      },
+    });
+    truckCount++;
+  }
+  console.log(`Created ${truckCount} trucks assigned to spots`);
+
+  // Create 8 available spare trucks
+  const spareTrucks = [
+    { number: 'S001', truckType: 'REACH' as const },
+    { number: 'S002', truckType: 'NINE_HUNDRED' as const },
+    { number: 'S003', truckType: 'SPRINTER' as const },
+    { number: 'S004', truckType: 'VAN' as const },
+    { number: 'S005', truckType: 'RENTAL' as const },
+    { number: 'S006', truckType: 'REACH' as const },
+    { number: 'S007', truckType: 'NINE_HUNDRED' as const },
+    { number: 'S008', truckType: 'SPRINTER' as const },
   ];
 
-  for (const truck of trucks) {
-    await prisma.truck.create({ data: truck });
+  for (const spare of spareTrucks) {
+    await prisma.truck.create({
+      data: { number: spare.number, status: 'AVAILABLE', truckType: spare.truckType },
+    });
   }
+  console.log('Created 8 available spare trucks');
 
-  console.log('Seeded 10 trucks');
+  // Create 4 out-of-service trucks
+  const oosTrucks = [
+    { number: 'X001', truckType: 'REACH' as const, note: 'Engine repair needed' },
+    { number: 'X002', truckType: 'NINE_HUNDRED' as const, note: 'Brake issue' },
+    { number: 'X003', truckType: 'SPRINTER' as const, note: 'Transmission failure' },
+    { number: 'X004', truckType: 'VAN' as const, note: 'Flat tire - waiting on parts' },
+  ];
+
+  for (const oos of oosTrucks) {
+    await prisma.truck.create({
+      data: { number: oos.number, status: 'OUT_OF_SERVICE', truckType: oos.truckType, note: oos.note },
+    });
+  }
+  console.log('Created 4 out-of-service trucks');
+
+  // Create 3 retired trucks
+  const retiredTrucks = [
+    { number: 'R001', truckType: 'REACH' as const, retiredAt: new Date('2025-12-15') },
+    { number: 'R002', truckType: 'VAN' as const, retiredAt: new Date('2026-01-20') },
+    { number: 'R003', truckType: 'NINE_HUNDRED' as const, retiredAt: new Date('2026-02-10') },
+  ];
+
+  for (const ret of retiredTrucks) {
+    await prisma.truck.create({
+      data: { number: ret.number, status: 'RETIRED', truckType: ret.truckType, retiredAt: ret.retiredAt },
+    });
+  }
+  console.log('Created 3 retired trucks');
+  console.log('Total trucks: 143 (128 assigned + 8 spare + 4 OOS + 3 retired)');
 }
 
 main()
