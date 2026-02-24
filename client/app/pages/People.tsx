@@ -30,6 +30,7 @@ export default function People() {
   const canViewDetails = hasAccess('OP_LEAD');
   const [showModal, setShowModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<any>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
   const [accessLevelFilter, setAccessLevelFilter] = useQueryState('accessLevel', { defaultValue: '' });
 
@@ -61,12 +62,34 @@ export default function People() {
 
   const resendMutation = useMutation({
     mutationFn: async (id: string) => {
-      return api.post(`/invites/${id}/resend`);
+      const res = await api.post(`/invites/${id}/resend`);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['invites', 'pending'] });
+      if (data.inviteLink) {
+        navigator.clipboard.writeText(data.inviteLink);
+        setCopiedId('resend');
+        setTimeout(() => setCopiedId(null), 3000);
+      }
+    },
+  });
+
+  const deleteInviteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return api.delete(`/invites/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invites', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
     },
   });
+
+  const handleDeleteInvite = (id: string, name: string) => {
+    if (confirm(`Delete pending invite for ${name}?`)) {
+      deleteInviteMutation.mutate(id);
+    }
+  };
 
   const filteredPeople = people?.filter((p: any) => {
     if (role && p.role !== role) return false;
@@ -292,17 +315,23 @@ export default function People() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        {invite.inviteExpired && (
-                          <button
-                            onClick={() => resendMutation.mutate(invite.id)}
-                            disabled={resendMutation.isPending}
-                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                          >
-                            <RefreshCw size={14} />
-                            Resend
-                          </button>
-                        )}
+                      <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                        <button
+                          onClick={() => resendMutation.mutate(invite.id)}
+                          disabled={resendMutation.isPending}
+                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                        >
+                          <RefreshCw size={14} />
+                          {copiedId === 'resend' ? 'Sent & Copied!' : resendMutation.isPending ? 'Sending...' : 'Resend'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvite(invite.id, invite.name)}
+                          disabled={deleteInviteMutation.isPending}
+                          className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

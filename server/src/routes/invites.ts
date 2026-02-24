@@ -94,6 +94,7 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         homeArea: user.homeArea,
         accessLevel: user.accessLevel,
       },
+      inviteLink,
     });
   } catch (error) {
     console.error('Send invite error:', error);
@@ -131,6 +132,9 @@ router.get('/pending', authenticate, requireAccessLevel('HIGHEST_MANAGER'), asyn
         accessLevel: user.accessLevel,
         createdAt: user.createdAt,
         inviteExpired,
+        inviteLink: latestToken && !inviteExpired
+          ? `${APP_URL}/invite/accept?token=${latestToken.token}`
+          : null,
       };
     });
 
@@ -197,10 +201,36 @@ router.post('/:id/resend', authenticate, requireAccessLevel('HIGHEST_MANAGER'), 
       `
     );
 
-    res.json({ message: 'Invite resent successfully' });
+    res.json({ message: 'Invite resent successfully', inviteLink });
   } catch (error) {
     console.error('Resend invite error:', error);
     res.status(500).json({ error: 'Failed to resend invite' });
+  }
+});
+
+// Delete pending invite — HIGHEST_MANAGER only
+router.delete('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isActive || user.password) {
+      return res.status(400).json({ error: 'Cannot delete an active user. Use deactivate instead.' });
+    }
+
+    // Delete invite tokens first, then the user
+    await prisma.inviteToken.deleteMany({ where: { userId: id } });
+    await prisma.user.delete({ where: { id } });
+
+    res.json({ message: 'Pending invite deleted' });
+  } catch (error) {
+    console.error('Delete invite error:', error);
+    res.status(500).json({ error: 'Failed to delete invite' });
   }
 });
 

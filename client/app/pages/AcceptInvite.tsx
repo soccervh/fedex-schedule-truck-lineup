@@ -86,9 +86,9 @@ export default function AcceptInvite() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold mb-4">FedEx Truck Lineup</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900">FedEx Truck Lineup</h1>
           <p className="text-gray-500">Validating your invite...</p>
         </div>
       </div>
@@ -97,9 +97,9 @@ export default function AcceptInvite() {
 
   if (status === 'invalid') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold mb-4">FedEx Truck Lineup</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900">FedEx Truck Lineup</h1>
           <div className="bg-red-50 text-red-600 p-4 rounded mb-4">
             {errorMessage}
           </div>
@@ -112,9 +112,9 @@ export default function AcceptInvite() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-2">
+        <h1 className="text-2xl font-bold text-center mb-2 text-gray-900">
           Welcome, {inviteUser?.name}!
         </h1>
         <p className="text-gray-500 text-center mb-6">
