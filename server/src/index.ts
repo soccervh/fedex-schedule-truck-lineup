@@ -46,9 +46,11 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(clientBuildPath));
 
   // SPA fallback: any non-API, non-health route serves index.html
-  app.get('*', (req, res) => {
+  app.use((req, res, next) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
       res.sendFile(path.join(clientBuildPath, 'index.html'));
+    } else {
+      next();
     }
   });
 }
