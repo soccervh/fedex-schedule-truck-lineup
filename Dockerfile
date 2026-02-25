@@ -5,7 +5,7 @@ WORKDIR /app
 # --- Build client ---
 FROM base AS client-build
 COPY client/package.json client/package-lock.json ./client/
-RUN cd client && npm install
+RUN cd client && npm install && npm install @rollup/rollup-linux-x64-musl
 COPY client/ ./client/
 RUN cd client && npm run build
 
