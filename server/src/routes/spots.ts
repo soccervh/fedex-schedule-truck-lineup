@@ -14,13 +14,13 @@ router.patch('/:id/route-override', authenticate, requireAccessLevel('OP_LEAD'),
       return res.status(400).json({ error: 'routeOverride must be an integer or null' });
     }
 
-    const spot = await prisma.spot.findUnique({ where: { id: parseInt(id) } });
+    const spot = await prisma.spot.findUnique({ where: { id: parseInt(id as string) } });
     if (!spot) {
       return res.status(404).json({ error: 'Spot not found' });
     }
 
     const updated = await prisma.spot.update({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id as string) },
       data: { routeOverride },
     });
 

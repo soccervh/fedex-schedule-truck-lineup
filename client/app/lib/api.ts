@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// Use current hostname so it works on both localhost and LAN
+// In production (same origin), use relative /api path
+// In development, hit the Express server on port 3001
+const isLocalhost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const API_BASE = import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' ? `http://${window.location.hostname}:3001/api` : 'http://localhost:3001/api');
+  (typeof window !== 'undefined' && !isLocalhost ? '/api' : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001/api`);
 
 export const api = axios.create({
   baseURL: API_BASE,

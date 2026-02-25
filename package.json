@@ -11,7 +11,8 @@
     "build:client": "cd client && npm run build",
     "db:migrate": "cd server && npx prisma migrate dev",
     "db:seed": "cd server && npx prisma db seed",
-    "db:studio": "cd server && npx prisma studio"
+    "db:studio": "cd server && npx prisma studio",
+    "start": "node server/dist/index.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
