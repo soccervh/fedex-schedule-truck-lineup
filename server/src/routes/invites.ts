@@ -64,8 +64,8 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
 
     const inviteLink = `${APP_URL}/invite/accept?token=${token}`;
 
-    // Send invite email
-    await sendEmail(
+    // Send invite email (fire and forget — don't block the response)
+    sendEmail(
       [email],
       'You\'re invited to FedEx Truck Lineup',
       `
@@ -180,8 +180,8 @@ router.post('/:id/resend', authenticate, requireAccessLevel('HIGHEST_MANAGER'), 
 
     const inviteLink = `${APP_URL}/invite/accept?token=${token}`;
 
-    // Send invite email
-    await sendEmail(
+    // Send invite email (fire and forget — don't block the response)
+    sendEmail(
       [user.email],
       'You\'re invited to FedEx Truck Lineup',
       `
