@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { hashPassword, comparePassword } from '../utils/password';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { sendEmail } from '../utils/email';
 
 const router = Router();
 
@@ -200,6 +201,97 @@ router.post('/accept-invite', async (req, res) => {
   } catch (error) {
     console.error('Accept invite error:', error);
     res.status(500).json({ error: 'Failed to accept invite' });
+  }
+});
+
+const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+
+// Forgot password — sends reset email
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Always return success to avoid leaking whether email exists
+    if (!user || !user.isActive) {
+      return res.json({ message: 'If that email exists, a reset link has been sent.' });
+    }
+
+    const resetToken = jwt.sign(
+      { userId: user.id, purpose: 'password-reset' },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
+
+    sendEmail(
+      [email],
+      'Reset your password — FedEx Truck Lineup',
+      `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Password Reset</h2>
+        <p>You requested a password reset for your FedEx Truck Lineup account.</p>
+        <p>Click the button below to set a new password:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" style="background-color: #4F0084; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 16px;">
+            Reset Password
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+        <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+        <p style="color: #666; font-size: 12px; word-break: break-all;">${resetLink}</p>
+      </div>
+      `
+    );
+
+    res.json({ message: 'If that email exists, a reset link has been sent.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    let payload: any;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    if (payload.purpose !== 'password-reset') {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await prisma.user.update({
+      where: { id: payload.userId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
