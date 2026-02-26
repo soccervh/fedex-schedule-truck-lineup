@@ -19,7 +19,9 @@ import inviteRoutes from './routes/invites';
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(cors());
 app.use(express.json());
 
