@@ -31,6 +31,7 @@ export default function People() {
   const [showModal, setShowModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
   const [accessLevelFilter, setAccessLevelFilter] = useQueryState('accessLevel', { defaultValue: '' });
 
@@ -92,6 +93,7 @@ export default function People() {
   };
 
   const filteredPeople = people?.filter((p: any) => {
+    if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (role && p.role !== role) return false;
     if (accessLevelFilter && p.accessLevel !== accessLevelFilter) return false;
     return true;
@@ -129,6 +131,13 @@ export default function People() {
       </div>
 
       <div className="flex gap-4">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name..."
+          className="px-3 py-2 border rounded-md"
+        />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}

@@ -1,5 +1,5 @@
 import { BeltColumn } from './BeltColumn';
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, Search } from 'lucide-react';
 
 type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
 
@@ -73,6 +73,7 @@ function TruckSidebar({
   onAddTruck,
   onTruckClick,
   onTruckDrop,
+  highlightTruck,
 }: {
   title: string;
   trucks: TruckData[];
@@ -80,6 +81,7 @@ function TruckSidebar({
   onAddTruck?: () => void;
   onTruckClick?: (truck: TruckData) => void;
   onTruckDrop?: (truckNumber: string) => void;
+  highlightTruck?: string;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const bgColor = variant === 'available' ? 'bg-green-50' : 'bg-red-50';
@@ -132,7 +134,9 @@ function TruckSidebar({
             {onTruckDrop ? 'Drop truck here' : 'None'}
           </div>
         ) : (
-          trucks.map((truck) => (
+          trucks.map((truck) => {
+            const isHighlighted = !!(highlightTruck && truck.number.toLowerCase().includes(highlightTruck.toLowerCase()));
+            return (
             <div
               key={truck.id}
               draggable
@@ -141,7 +145,7 @@ function TruckSidebar({
                 e.dataTransfer.effectAllowed = 'move';
               }}
               onClick={() => onTruckClick?.(truck)}
-              className={`${badgeColor} rounded p-2 text-sm cursor-grab active:cursor-grabbing ${onTruckClick ? 'hover:opacity-80' : ''}`}
+              className={`${badgeColor} rounded p-2 text-sm cursor-grab active:cursor-grabbing ${onTruckClick ? 'hover:opacity-80' : ''} ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
             >
               <div className="font-semibold">{truck.number}</div>
               {truck.truckType && truck.truckType !== 'UNKNOWN' && (
@@ -151,7 +155,8 @@ function TruckSidebar({
                 <div className="text-xs opacity-75 mt-1">{truck.note}</div>
               )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -166,6 +171,7 @@ function MobileTruckPanel({
   onClose,
   onAddTruck,
   onTruckClick,
+  highlightTruck,
 }: {
   title: string;
   trucks: TruckData[];
@@ -173,6 +179,7 @@ function MobileTruckPanel({
   onClose: () => void;
   onAddTruck?: () => void;
   onTruckClick?: (truck: TruckData) => void;
+  highlightTruck?: string;
 }) {
   const headerColor = variant === 'available' ? 'bg-green-600' : 'bg-red-600';
   const bgColor = variant === 'available' ? 'bg-green-50' : 'bg-red-50';
@@ -201,11 +208,13 @@ function MobileTruckPanel({
         {trucks.length === 0 ? (
           <div className="text-gray-400 text-center text-xs py-3">None</div>
         ) : (
-          trucks.map((truck) => (
+          trucks.map((truck) => {
+            const isHighlighted = !!(highlightTruck && truck.number.toLowerCase().includes(highlightTruck.toLowerCase()));
+            return (
             <div
               key={truck.id}
               onClick={() => onTruckClick?.(truck)}
-              className={`${badgeColor} rounded p-2 text-sm ${onTruckClick ? 'active:opacity-70' : ''}`}
+              className={`${badgeColor} rounded p-2 text-sm ${onTruckClick ? 'active:opacity-70' : ''} ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
             >
               <div className="font-semibold">{truck.number}</div>
               {truck.truckType && truck.truckType !== 'UNKNOWN' && (
@@ -215,7 +224,8 @@ function MobileTruckPanel({
                 <div className="text-xs opacity-75 mt-0.5">{truck.note}</div>
               )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -325,14 +335,97 @@ export function TruckLineupView({
 }: TruckLineupViewProps) {
   const [activeBeltTab, setActiveBeltTab] = useState(0);
   const [mobileDrawer, setMobileDrawer] = useState<'oos' | 'available' | 'retired' | null>(null);
+  const [truckSearch, setTruckSearch] = useState('');
 
   // Desktop: D, C, B, A (left to right, matching physical layout)
   const orderedBelts = [...belts].sort((a, b) => b.baseNumber - a.baseNumber);
   // Mobile tabs: A, B, C, D (alphabetical)
   const mobileBelts = [...belts].sort((a, b) => a.baseNumber - b.baseNumber);
 
+  // Find where a searched truck is located
+  const truckSearchResult = (() => {
+    if (!truckSearch) return null;
+    const q = truckSearch.toLowerCase();
+
+    // Check belt spots
+    for (const belt of belts) {
+      for (const spot of belt.spots) {
+        const spotTruck = spot.truckAssignment?.truck.number || spot.assignment?.truckNumber;
+        if (spotTruck && spotTruck.toLowerCase().includes(q)) {
+          const spotName = `${belt.letter}${spot.number}`;
+          return { truck: spotTruck, location: `at ${spotName}`, beltLetter: belt.letter };
+        }
+      }
+    }
+
+    // Check available trucks
+    for (const truck of availableTrucks) {
+      if (truck.number.toLowerCase().includes(q)) {
+        return { truck: truck.number, location: 'in Available', beltLetter: null };
+      }
+    }
+
+    // Check OOS trucks
+    for (const truck of outOfServiceTrucks) {
+      if (truck.number.toLowerCase().includes(q)) {
+        return { truck: truck.number, location: 'in Out of Service', beltLetter: null };
+      }
+    }
+
+    // Check retired trucks
+    for (const truck of retiredTrucks) {
+      if (truck.number.toLowerCase().includes(q)) {
+        return { truck: truck.number, location: 'in Retired', beltLetter: null };
+      }
+    }
+
+    return { truck: truckSearch, location: 'not found', beltLetter: null };
+  })();
+
+  // Auto-switch mobile belt tab when truck is found on a belt
+  const handleTruckSearchChange = (value: string) => {
+    setTruckSearch(value);
+    if (value) {
+      const q = value.toLowerCase();
+      for (let i = 0; i < mobileBelts.length; i++) {
+        const belt = mobileBelts[i];
+        for (const spot of belt.spots) {
+          const spotTruck = spot.truckAssignment?.truck.number || spot.assignment?.truckNumber;
+          if (spotTruck && spotTruck.toLowerCase().includes(q)) {
+            setActiveBeltTab(i);
+            return;
+          }
+        }
+      }
+    }
+  };
+
   return (
-    <div className="flex h-full gap-4">
+    <div className="flex flex-col h-full gap-2">
+      {/* Search bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative">
+          <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={truckSearch}
+            onChange={(e) => handleTruckSearchChange(e.target.value)}
+            placeholder="Find truck..."
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md w-48"
+          />
+        </div>
+        {truckSearchResult && (
+          <span className={`text-sm px-2.5 py-1 rounded-full font-medium ${
+            truckSearchResult.location === 'not found'
+              ? 'bg-gray-100 text-gray-600'
+              : 'bg-blue-100 text-blue-800'
+          }`}>
+            {truckSearchResult.truck} {truckSearchResult.location}
+          </span>
+        )}
+      </div>
+
+    <div className="flex flex-1 gap-4 min-h-0">
       {/* ===== DESKTOP LAYOUT ===== */}
       {/* Left sidebar - Out of Service (desktop only) */}
       <div className="hidden md:flex">
@@ -342,6 +435,7 @@ export function TruckLineupView({
           variant="out-of-service"
           onTruckClick={isManager ? onOutOfServiceTruckClick : undefined}
           onTruckDrop={isManager ? onTruckDropOnOutOfService : undefined}
+          highlightTruck={truckSearch}
         />
       </div>
 
@@ -363,6 +457,7 @@ export function TruckLineupView({
               isManager={isManager}
               isDragEnabled={!!onTruckDropOnSpot}
               onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, belt.id, truckNumber) : undefined}
+              highlightTruck={truckSearch}
             />
           ))}
         </div>
@@ -379,6 +474,7 @@ export function TruckLineupView({
           onAddTruck={isManager ? onAddTruck : undefined}
           onTruckClick={isManager ? onTruckClick : undefined}
           onTruckDrop={isManager ? onTruckDropOnAvailable : undefined}
+          highlightTruck={truckSearch}
         />
         <RetiredTrucksPanel
           trucks={retiredTrucks}
@@ -454,6 +550,7 @@ export function TruckLineupView({
               variant="out-of-service"
               onClose={() => setMobileDrawer(null)}
               onTruckClick={isManager ? onOutOfServiceTruckClick : undefined}
+              highlightTruck={truckSearch}
             />
           )}
 
@@ -472,6 +569,7 @@ export function TruckLineupView({
                 isDragEnabled={!!onTruckDropOnSpot}
                 onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, mobileBelts[activeBeltTab].id, truckNumber) : undefined}
                 showTruckInHeader={mobileDrawer !== null}
+                highlightTruck={truckSearch}
               />
             </div>
           )}
@@ -494,10 +592,12 @@ export function TruckLineupView({
               onClose={() => setMobileDrawer(null)}
               onAddTruck={isManager ? onAddTruck : undefined}
               onTruckClick={isManager ? onTruckClick : undefined}
+              highlightTruck={truckSearch}
             />
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -24,6 +24,7 @@ interface TruckAssignment {
     number: string;
     status: 'AVAILABLE' | 'ASSIGNED' | 'OUT_OF_SERVICE';
     truckType?: string;
+    homeSpotId?: number | null;
   };
 }
 
@@ -34,6 +35,7 @@ interface SpotRoute {
 }
 
 interface SpotCardCompactProps {
+  spotId: number;
   spotNumber: number;
   beltLetter: string;
   baseNumber: number;
@@ -47,6 +49,7 @@ interface SpotCardCompactProps {
   onTruckDrop?: (truckNumber: string) => void;
   isDragEnabled?: boolean;
   showTruckInHeader?: boolean;
+  highlightTruck?: string;
 }
 
 const truckTypeLabel = (t?: string) => {
@@ -66,6 +69,7 @@ const loadLocationColors: Record<string, string> = {
 };
 
 export function SpotCardCompact({
+  spotId,
   spotNumber,
   beltLetter,
   baseNumber,
@@ -79,6 +83,7 @@ export function SpotCardCompact({
   onTruckDrop,
   isDragEnabled = false,
   showTruckInHeader = false,
+  highlightTruck,
 }: SpotCardCompactProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const routeDisplay = route ? `R:${route.number}` : '—';
@@ -106,6 +111,12 @@ export function SpotCardCompact({
 
   // Get truck number - prefer independent truck assignment, fall back to driver assignment's truck
   const truckNumber = truckAssignment?.truck.number || assignment?.truckNumber;
+  const isHighlighted = !!(highlightTruck && truckNumber && truckNumber.toLowerCase().includes(highlightTruck.toLowerCase()));
+
+  // The truck in this spot has a different home spot (it's not where it belongs)
+  const isMismatch = truckAssignment &&
+    truckAssignment.truck.homeSpotId != null &&
+    truckAssignment.truck.homeSpotId !== spotId;
 
   const getBackgroundClass = () => {
     if (!assignment) return 'bg-gray-50 border-dashed';
@@ -136,7 +147,7 @@ export function SpotCardCompact({
       disabled={!isManager && !assignment?.needsCoverage}
       className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
         isManager && truckNumber ? 'cursor-grab active:cursor-grabbing' : isManager ? 'cursor-pointer' : 'cursor-default'
-      } ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+      } ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : isMismatch ? 'ring-2 ring-amber-400' : ''}`}
     >
       <div className="flex justify-between items-center text-xs font-medium opacity-90">
         <span>{spotName}</span>

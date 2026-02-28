@@ -15,10 +15,24 @@ const assignAreaLabels: Record<string, string> = {
   PULLER: 'Puller',
 };
 
+const scheduleLabels: Record<string, string> = {
+  MON_FRI: 'Mon-Fri',
+  TUE_FRI: 'Tue-Fri',
+  SAT_ONLY: 'Sat Only',
+};
+
+const scheduleBadgeColors: Record<string, string> = {
+  MON_FRI: 'bg-gray-100 text-gray-700',
+  TUE_FRI: 'bg-yellow-100 text-yellow-800',
+  SAT_ONLY: 'bg-purple-100 text-purple-800',
+};
+
 export default function Routes() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editingRoute, setEditingRoute] = useState<any>(null);
+  const [scheduleFilter, setScheduleFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: routes, isLoading } = useQuery({
     queryKey: ['routes'],
@@ -66,6 +80,29 @@ export default function Routes() {
         </button>
       </div>
 
+      <div className="flex gap-2 items-center">
+        {['ALL', 'MON_FRI', 'TUE_FRI', 'SAT_ONLY'].map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setScheduleFilter(filter)}
+            className={`px-3 py-1.5 text-sm rounded-md border ${
+              scheduleFilter === filter
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {filter === 'ALL' ? 'All' : scheduleLabels[filter]}
+          </button>
+        ))}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search route #..."
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+        />
+      </div>
+
       {isLoading ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
       ) : (
@@ -77,6 +114,9 @@ export default function Routes() {
                   Route Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Schedule
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Assign Area
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
@@ -85,10 +125,18 @@ export default function Routes() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {routes?.map((route: any) => (
+              {routes
+                ?.filter((route: any) => scheduleFilter === 'ALL' || route.schedule === scheduleFilter)
+                .filter((route: any) => !searchQuery || route.number.includes(searchQuery))
+                .map((route: any) => (
                 <tr key={route.id}>
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
                     {route.number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${scheduleBadgeColors[route.schedule] || 'bg-gray-100 text-gray-700'}`}>
+                      {scheduleLabels[route.schedule] || route.schedule}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {route.loadLocation ? assignAreaLabels[route.loadLocation] || route.loadLocation : '—'}

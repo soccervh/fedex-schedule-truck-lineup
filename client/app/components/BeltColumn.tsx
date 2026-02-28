@@ -45,6 +45,7 @@ interface BeltColumnProps {
   onTruckDrop?: (spot: Spot, truckNumber: string) => void;
   isDragEnabled?: boolean;
   showTruckInHeader?: boolean;
+  highlightTruck?: string;
 }
 
 export function BeltColumn({
@@ -59,6 +60,7 @@ export function BeltColumn({
   onTruckDrop,
   isDragEnabled = false,
   showTruckInHeader = false,
+  highlightTruck,
 }: BeltColumnProps) {
   // Sort spots by number (1 at top/north, 32 at bottom/south)
   const sortedSpots = [...spots].sort((a, b) => a.number - b.number);
@@ -79,12 +81,14 @@ export function BeltColumn({
             route={spot.route}
             assignment={spot.assignment}
             truckAssignment={spot.truckAssignment}
+            spotId={spot.id}
             onClick={() => onSpotClick(spot)}
             onDoubleClick={() => onSpotDoubleClick(beltId)}
             isManager={isManager}
             isDragEnabled={isDragEnabled}
             onTruckDrop={onTruckDrop ? (truckNumber) => onTruckDrop(spot, truckNumber) : undefined}
             showTruckInHeader={showTruckInHeader}
+            highlightTruck={highlightTruck}
           />
         ))}
       </div>
