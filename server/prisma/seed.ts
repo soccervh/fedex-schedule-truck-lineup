@@ -205,7 +205,7 @@ async function main() {
   console.log('Seeded FO area (20 spots)');
 
   // Create admin manager user
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('Purple2010!', 10);
   await prisma.user.create({
     data: {
       email: 'admin@fedex.com',
@@ -217,7 +217,7 @@ async function main() {
     },
   });
 
-  console.log('Created admin user (email: admin@fedex.com, password: admin123)');
+  console.log('Created admin user (email: admin@fedex.com, password: Purple2010!)');
   console.log('No fake people or trucks seeded — add real ones via the app.');
 }
 
