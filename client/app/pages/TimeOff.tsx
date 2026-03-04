@@ -1,15 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
+import { todayET, formatDateET } from '../lib/date';
 import { Check, X } from 'lucide-react';
 
 export default function TimeOff() {
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useQueryState('from', {
-    defaultValue: new Date().toISOString().split('T')[0],
+    defaultValue: todayET(),
   });
   const [endDate, setEndDate] = useQueryState('to', {
-    defaultValue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    defaultValue: formatDateET(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
   });
   const [statusFilter, setStatusFilter] = useQueryState('status', {
     defaultValue: 'PENDING',

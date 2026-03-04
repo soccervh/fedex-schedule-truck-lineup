@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { formatDateET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function MySchedule() {
@@ -23,8 +24,8 @@ export default function MySchedule() {
     queryFn: async () => {
       const res = await api.get('/assignments/my-assignments', {
         params: {
-          startDate: weekStart.toISOString().split('T')[0],
-          endDate: weekEnd.toISOString().split('T')[0],
+          startDate: formatDateET(weekStart),
+          endDate: formatDateET(weekEnd),
         },
       });
       return res.data;

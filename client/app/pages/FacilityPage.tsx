@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
+import { todayET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
 import { FacilityView } from '../components/FacilityView';
 import { BeltDetailView } from '../components/BeltDetailView';
@@ -13,7 +14,7 @@ import type { Belt, BeltSpot, FacilityArea, FacilitySpot, SwingDriver } from '..
 export default function FacilityPage() {
   const { isManager } = useAuth();
   const [selectedDate, setSelectedDate] = useQueryState('date', {
-    defaultValue: new Date().toISOString().split('T')[0],
+    defaultValue: todayET(),
   });
   const [detailBeltId, setDetailBeltId] = useState<number | null>(null);
   const [selectedBeltSpot, setSelectedBeltSpot] = useState<{ spot: BeltSpot; beltId: number } | null>(null);

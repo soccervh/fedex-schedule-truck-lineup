@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { todayET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
 import { Pencil, Check, X } from 'lucide-react';
 
@@ -14,7 +15,7 @@ interface Briefing {
 export default function HomePage() {
   const { isManager } = useAuth();
   const queryClient = useQueryClient();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayET();
 
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');

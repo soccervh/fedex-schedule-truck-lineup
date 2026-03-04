@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
+import { todayET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
 import { TruckLineupView } from '../components/TruckLineupView';
 import { BeltDetailView } from '../components/BeltDetailView';
@@ -16,7 +17,7 @@ export default function TruckLineupPage() {
   const { isTruckMover } = useAuth();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useQueryState('date', {
-    defaultValue: new Date().toISOString().split('T')[0],
+    defaultValue: todayET(),
   });
   const [deepLinkSpotId, setDeepLinkSpotId] = useQueryState('spotId');
   const [deepLinkBeltId, setDeepLinkBeltId] = useQueryState('beltId');
