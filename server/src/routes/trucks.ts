@@ -46,6 +46,61 @@ router.get('/status/:status', authenticate, async (req, res) => {
   }
 });
 
+// Lookup a truck by number (including retired)
+router.get('/lookup/:number', authenticate, async (req, res) => {
+  try {
+    const number = req.params.number as string;
+
+    const truck = await prisma.truck.findFirst({
+      where: { number },
+      include: {
+        homeSpot: {
+          include: { belt: true },
+        },
+      },
+    });
+
+    if (!truck) {
+      return res.json({ found: false });
+    }
+
+    // If the truck is assigned, find its current spot assignment (most recent date)
+    let spotInfo: { spotNumber: number; beltLetter: string } | null = null;
+    if (truck.status === 'ASSIGNED') {
+      const assignment = await prisma.truckSpotAssignment.findFirst({
+        where: { truckId: truck.id },
+        orderBy: { date: 'desc' },
+        include: {
+          spot: {
+            include: { belt: true },
+          },
+        },
+      });
+      if (assignment) {
+        spotInfo = {
+          spotNumber: assignment.spot.number,
+          beltLetter: assignment.spot.belt.letter,
+        };
+      }
+    }
+
+    res.json({
+      found: true,
+      truck: {
+        id: truck.id,
+        number: truck.number,
+        status: truck.status,
+        truckType: truck.truckType,
+        note: truck.note,
+      },
+      spotInfo,
+    });
+  } catch (error) {
+    console.error('Lookup truck error:', error);
+    res.status(500).json({ error: 'Failed to lookup truck' });
+  }
+});
+
 // Create a new truck
 router.post('/', authenticate, requireAccessLevel('TRUCK_MOVER'), async (req, res) => {
   try {

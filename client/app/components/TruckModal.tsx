@@ -30,14 +30,32 @@ interface Belt {
 
 type ModalPhase = 'form' | 'confirm-assign' | 'confirm-replace';
 
+type NumberSwapStatus = 'available' | 'exists' | null;
+
+interface LookupResult {
+  found: boolean;
+  truck?: {
+    id: number;
+    number: string;
+    status: string;
+    truckType: string;
+    note?: string;
+  };
+  spotInfo?: {
+    spotNumber: number;
+    beltLetter: string;
+  } | null;
+}
+
 interface TruckModalProps {
   truck?: Truck;
   date?: string;
   assignmentBeltsData?: FullBelt[];
+  currentSpotAssignment?: { spotId: number; spotLabel: string };
   onClose: () => void;
 }
 
-export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckModalProps) {
+export function TruckModal({ truck, date, assignmentBeltsData, currentSpotAssignment, onClose }: TruckModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!truck?.id;
 
@@ -52,6 +70,12 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
     homeSpotId: truck?.homeSpotId?.toString() || '',
     note: truck?.note || '',
   });
+
+  // Swap-related state
+  const [numberSwapStatus, setNumberSwapStatus] = useState<NumberSwapStatus>(null);
+  const [existingTruckInfo, setExistingTruckInfo] = useState<LookupResult | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [swapPending, setSwapPending] = useState(false);
 
   // Fetch belts for home spot selection
   const { data: beltsData } = useQuery({
@@ -109,9 +133,78 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
     },
   });
 
+  const handleNumberBlur = async () => {
+    if (!isEditing) return;
+    const newNumber = formData.number.trim();
+    if (!newNumber || newNumber === truck?.number) {
+      setNumberSwapStatus(null);
+      setExistingTruckInfo(null);
+      return;
+    }
+
+    setLookupLoading(true);
+    try {
+      const res = await api.get(`/trucks/lookup/${encodeURIComponent(newNumber)}`);
+      const data = res.data as LookupResult;
+      if (data.found) {
+        setNumberSwapStatus('exists');
+        setExistingTruckInfo(data);
+      } else {
+        setNumberSwapStatus('available');
+        setExistingTruckInfo(null);
+      }
+    } catch {
+      setNumberSwapStatus(null);
+      setExistingTruckInfo(null);
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const handleSwap = async () => {
+    if (!truck?.id || !date) return;
+    setSwapPending(true);
+    try {
+      // 1. Create the new truck with the new number
+      const createRes = await api.post('/trucks', {
+        number: formData.number.trim(),
+        truckType: formData.truckType,
+        homeSpotId: formData.homeSpotId || null,
+        note: formData.note,
+        status: currentSpotAssignment ? 'ASSIGNED' : 'AVAILABLE',
+      });
+      const newTruck = createRes.data;
+
+      // 2. If old truck had a spot, assign new truck to that spot
+      if (currentSpotAssignment) {
+        await api.post('/trucks/spot-assignments', {
+          truckId: newTruck.id,
+          spotId: currentSpotAssignment.spotId,
+          date,
+        });
+      }
+
+      // 3. Move old truck to available (if it was assigned)
+      if (truck.status === 'ASSIGNED') {
+        await api.post('/trucks/move-to-available', { truckId: truck.id, date });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['trucks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts', date] });
+      onClose();
+    } catch (error) {
+      console.error('Swap truck error:', error);
+      alert('Failed to swap truck. Please try again.');
+    } finally {
+      setSwapPending(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEditing) {
+    if (isEditing && numberSwapStatus === 'available') {
+      handleSwap();
+    } else if (isEditing) {
       updateMutation.mutate(formData);
     } else {
       createMutation.mutate(formData);
@@ -150,7 +243,7 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
     assignMutation.mutate({ truckId: createdTruck.id, spotId: parseInt(formData.homeSpotId) });
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || swapPending;
 
   // Build spot options from all belts
   const spotOptions: { id: number; label: string; letter: string; number: number }[] = [];
@@ -249,6 +342,19 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
     );
   }
 
+  // Helper to describe where an existing truck is
+  const getExistingTruckLocationText = () => {
+    if (!existingTruckInfo?.truck) return '';
+    const t = existingTruckInfo.truck;
+    if (t.status === 'RETIRED') return `${t.number} is retired`;
+    if (t.status === 'OUT_OF_SERVICE') return `${t.number} is Out of Service`;
+    if (t.status === 'AVAILABLE') return `${t.number} is in Available`;
+    if (t.status === 'ASSIGNED' && existingTruckInfo.spotInfo) {
+      return `${t.number} is at spot ${existingTruckInfo.spotInfo.beltLetter}${existingTruckInfo.spotInfo.spotNumber}`;
+    }
+    return `${t.number} already exists (${t.status})`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
@@ -269,11 +375,32 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
             <input
               type="text"
               value={formData.number}
-              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, number: e.target.value });
+                // Reset swap status when typing
+                if (isEditing) {
+                  setNumberSwapStatus(null);
+                  setExistingTruckInfo(null);
+                }
+              }}
+              onBlur={handleNumberBlur}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="e.g., T101"
               required
             />
+            {lookupLoading && (
+              <p className="text-sm text-gray-500 mt-1">Checking truck number...</p>
+            )}
+            {isEditing && numberSwapStatus === 'available' && (
+              <p className="text-sm text-green-600 mt-1">
+                New truck {formData.number.trim()} will be created and placed in {truck?.number}'s spot. {truck?.number} will move to Available.
+              </p>
+            )}
+            {isEditing && numberSwapStatus === 'exists' && (
+              <p className="text-sm text-amber-600 mt-1">
+                {getExistingTruckLocationText()}. Cannot swap to an existing truck number.
+              </p>
+            )}
           </div>
 
           <div>
@@ -326,10 +453,10 @@ export function TruckModal({ truck, date, assignmentBeltsData, onClose }: TruckM
 
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || (isEditing && numberSwapStatus === 'exists')}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {isPending ? 'Saving...' : isEditing ? 'Update Truck' : 'Add Truck'}
+            {isPending ? 'Saving...' : isEditing && numberSwapStatus === 'available' ? 'Swap Truck' : isEditing ? 'Update Truck' : 'Add Truck'}
           </button>
         </form>
       </div>

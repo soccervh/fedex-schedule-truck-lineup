@@ -64,6 +64,20 @@ export default function TruckLineupPage() {
     },
   });
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const deleteTruckMutation = useMutation({
+    mutationFn: async (truckId: number) => {
+      return api.delete(`/trucks/${truckId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] });
+      queryClient.invalidateQueries({ queryKey: ['retired-trucks'] });
+      setRestoreTruck(null);
+      setConfirmDelete(false);
+    },
+  });
+
   // Handle deep-link from AssignmentModal "Swap Truck" button
   useEffect(() => {
     if (!deepLinkSpotId || !deepLinkBeltId || !beltsData) return;
@@ -364,6 +378,17 @@ export default function TruckLineupPage() {
           truck={selectedTruck || undefined}
           date={selectedDate}
           assignmentBeltsData={beltsData}
+          currentSpotAssignment={(() => {
+            if (!selectedTruck || !beltsData) return undefined;
+            for (const belt of beltsData) {
+              for (const spot of belt.spots) {
+                if (spot.truckAssignment?.truck?.id === selectedTruck.id) {
+                  return { spotId: spot.id, spotLabel: `${belt.letter}${spot.number}` };
+                }
+              }
+            }
+            return undefined;
+          })()}
           onClose={handleCloseTruckModal}
         />
       )}
@@ -399,34 +424,76 @@ export default function TruckLineupPage() {
       {restoreTruck && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
-              <span className="font-semibold text-lg">Restore Truck</span>
-            </div>
+            {!confirmDelete ? (
+              <>
+                <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                  <span className="font-semibold text-lg">Restore Truck</span>
+                </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-4">
-              <p className="text-lg font-semibold text-gray-800">
-                Restore truck {restoreTruck.number} to Available?
-              </p>
-              <p className="text-gray-600 mt-2">
-                This will move the truck back to the active fleet.
-              </p>
-            </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-4">
+                  <p className="text-lg font-semibold text-gray-800">
+                    Restore truck {restoreTruck.number} to Available?
+                  </p>
+                  <p className="text-gray-600 mt-2">
+                    This will move the truck back to the active fleet.
+                  </p>
+                </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setRestoreTruck(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => unretireMutation.mutate(restoreTruck.id)}
-                disabled={unretireMutation.isPending}
-                className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
-              >
-                {unretireMutation.isPending ? 'Restoring...' : 'Yes, Restore'}
-              </button>
-            </div>
+                <div className="flex gap-3 mb-3">
+                  <button
+                    onClick={() => { setRestoreTruck(null); setConfirmDelete(false); }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => unretireMutation.mutate(restoreTruck.id)}
+                    disabled={unretireMutation.isPending}
+                    className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {unretireMutation.isPending ? 'Restoring...' : 'Yes, Restore'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                >
+                  Permanently Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2 text-red-600 mb-4">
+                  <span className="font-semibold text-lg">Delete Truck</span>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center mb-4">
+                  <p className="text-lg font-semibold text-gray-800">
+                    Permanently delete truck {restoreTruck.number}?
+                  </p>
+                  <p className="text-gray-600 mt-2">
+                    This cannot be undone. All assignment history will be removed.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => deleteTruckMutation.mutate(restoreTruck.id)}
+                    disabled={deleteTruckMutation.isPending}
+                    className="flex-1 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleteTruckMutation.isPending ? 'Deleting...' : 'Yes, Delete Forever'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
