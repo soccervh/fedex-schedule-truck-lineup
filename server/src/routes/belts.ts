@@ -1,8 +1,19 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import type { RouteSchedule } from '@prisma/client';
 
 const router = Router();
+
+// Helper: get allowed schedules for a given day of week (0=Sun, 6=Sat)
+function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
+  switch (dayOfWeek) {
+    case 0: return null; // Sunday - no routes
+    case 1: return ['MON_FRI']; // Monday
+    case 6: return ['SAT_ONLY']; // Saturday
+    default: return ['MON_FRI', 'TUE_FRI']; // Tue-Fri
+  }
+}
 
 // Get all belts with spot counts
 router.get('/', authenticate, async (req, res) => {
@@ -35,6 +46,30 @@ router.get('/all/assignments', authenticate, async (req, res) => {
     }
 
     const targetDate = new Date(date as string);
+    const dayOfWeek = targetDate.getUTCDay();
+    const allowedSchedules = getAllowedSchedules(dayOfWeek);
+
+    const routeWhere: any = { isActive: true };
+    if (allowedSchedules) {
+      routeWhere.schedule = { in: allowedSchedules };
+    }
+
+    // Determine effective date for truck assignments (carry-forward)
+    // If no truck assignments exist for the requested date, use the most recent date that has them
+    let truckAssignmentDate = targetDate;
+    const hasTruckAssignments = await prisma.truckSpotAssignment.count({
+      where: { date: targetDate },
+    });
+    if (hasTruckAssignments === 0) {
+      const mostRecent = await prisma.truckSpotAssignment.findFirst({
+        where: { date: { lte: targetDate } },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      });
+      if (mostRecent) {
+        truckAssignmentDate = mostRecent.date;
+      }
+    }
 
     const belts = await prisma.belt.findMany({
       orderBy: { id: 'asc' },
@@ -56,14 +91,14 @@ router.get('/all/assignments', authenticate, async (req, res) => {
               },
             },
             truckAssignments: {
-              where: { date: targetDate },
+              where: { date: truckAssignmentDate },
               include: {
                 truck: true,
               },
             },
             routes: {
-              where: { isActive: true },
-              select: { id: true, number: true, loadLocation: true },
+              where: allowedSchedules ? routeWhere : { isActive: true, schedule: { in: [] } },
+              select: { id: true, number: true, loadLocation: true, schedule: true },
               orderBy: { number: 'asc' },
             },
           },
@@ -95,7 +130,12 @@ router.get('/all/assignments', authenticate, async (req, res) => {
       baseNumber: belt.baseNumber,
       spots: belt.spots.map(spot => {
         const assignment = spot.assignments[0];
-        const truckAssignment = spot.truckAssignments[0];
+        const rawTruckAssignment = spot.truckAssignments[0];
+        // Filter out carried-forward assignments for trucks that have since been retired or moved OOS
+        const truckAssignment = rawTruckAssignment &&
+          rawTruckAssignment.truck.status !== 'RETIRED' &&
+          rawTruckAssignment.truck.status !== 'OUT_OF_SERVICE'
+          ? rawTruckAssignment : undefined;
         const isOff = assignment ? timeOffUserIds.has(assignment.userId) : false;
 
         return {

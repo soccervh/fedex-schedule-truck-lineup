@@ -146,12 +146,14 @@ router.post('/retire', authenticate, requireAccessLevel('TRUCK_MOVER'), async (r
       return res.status(404).json({ error: 'Truck not found' });
     }
 
-    // Remove any spot assignment for this date if provided
+    // Carry forward and remove spot assignment for this date
     if (date) {
+      const targetDate = new Date(date);
+      await ensureAssignmentsForDate(targetDate);
       await prisma.truckSpotAssignment.deleteMany({
         where: {
           truckId: parseInt(truckId, 10),
-          date: new Date(date),
+          date: targetDate,
         },
       });
     }
@@ -203,6 +205,45 @@ router.post('/unretire', authenticate, requireAccessLevel('TRUCK_MOVER'), async 
 
 // ============ Truck Spot Assignments ============
 
+// Helper: carry forward truck assignments from the most recent prior date
+// to the target date if no assignments exist for the target date yet.
+// This ensures trucks "stick" to their spots until explicitly moved.
+async function ensureAssignmentsForDate(targetDate: Date) {
+  const existingCount = await prisma.truckSpotAssignment.count({
+    where: { date: targetDate },
+  });
+  if (existingCount > 0) return;
+
+  // Find the most recent date that has assignments
+  const mostRecent = await prisma.truckSpotAssignment.findFirst({
+    where: { date: { lt: targetDate } },
+    orderBy: { date: 'desc' },
+    select: { date: true },
+  });
+  if (!mostRecent) return;
+
+  const priorAssignments = await prisma.truckSpotAssignment.findMany({
+    where: { date: mostRecent.date },
+    include: { truck: true },
+  });
+
+  // Only carry forward trucks that are still active (not retired or out of service)
+  const validAssignments = priorAssignments.filter(
+    a => a.truck.status !== 'RETIRED' && a.truck.status !== 'OUT_OF_SERVICE'
+  );
+
+  if (validAssignments.length > 0) {
+    await prisma.truckSpotAssignment.createMany({
+      data: validAssignments.map(a => ({
+        truckId: a.truckId,
+        spotId: a.spotId,
+        date: targetDate,
+      })),
+      skipDuplicates: true,
+    });
+  }
+}
+
 // Get all truck spot assignments for a date
 router.get('/spot-assignments', authenticate, async (req, res) => {
   try {
@@ -243,6 +284,9 @@ router.post('/spot-assignments', authenticate, requireAccessLevel('TRUCK_MOVER')
     }
 
     const targetDate = new Date(date);
+
+    // Carry forward assignments from prior date if none exist for this date
+    await ensureAssignmentsForDate(targetDate);
 
     // Check if truck exists
     const truck = await prisma.truck.findUnique({
@@ -367,12 +411,14 @@ router.post('/move-to-out-of-service', authenticate, requireAccessLevel('TRUCK_M
       return res.status(404).json({ error: 'Truck not found' });
     }
 
-    // Remove any spot assignment for this date if provided
+    // Carry forward and remove spot assignment for this date
     if (date) {
+      const targetDate = new Date(date);
+      await ensureAssignmentsForDate(targetDate);
       await prisma.truckSpotAssignment.deleteMany({
         where: {
           truckId: parseInt(truckId, 10),
-          date: new Date(date),
+          date: targetDate,
         },
       });
     }
@@ -407,12 +453,14 @@ router.post('/move-to-available', authenticate, requireAccessLevel('TRUCK_MOVER'
       return res.status(404).json({ error: 'Truck not found' });
     }
 
-    // Remove any spot assignment for this date if provided
+    // Carry forward and remove spot assignment for this date
     if (date) {
+      const targetDate = new Date(date);
+      await ensureAssignmentsForDate(targetDate);
       await prisma.truckSpotAssignment.deleteMany({
         where: {
           truckId: parseInt(truckId, 10),
-          date: new Date(date),
+          date: targetDate,
         },
       });
     }

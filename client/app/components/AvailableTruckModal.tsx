@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { X, Pencil, Ban, Trash2, AlertTriangle } from 'lucide-react';
-import type { Truck } from '../types/lineup';
+import { X, Pencil, Ban, Trash2, AlertTriangle, MapPin, Home } from 'lucide-react';
+import type { Truck, Belt } from '../types/lineup';
 
 interface AvailableTruckModalProps {
   truck: Truck;
+  allBelts?: Belt[];
   date: string;
   onClose: () => void;
   onEditTruck: () => void;
 }
 
-type ModalStep = 'select' | 'confirm-retire' | 'out-of-service';
+type ModalStep = 'select' | 'confirm-retire' | 'out-of-service' | 'pick-spot' | 'confirm-spot' | 'confirm-home-spot';
 
 export function AvailableTruckModal({
   truck,
+  allBelts,
   date,
   onClose,
   onEditTruck,
@@ -22,6 +24,11 @@ export function AvailableTruckModal({
   const queryClient = useQueryClient();
   const [step, setStep] = useState<ModalStep>('select');
   const [oosNote, setOosNote] = useState('');
+  const [selectedSpot, setSelectedSpot] = useState<{
+    id: number;
+    beltLetter: string;
+    spotNumber: number;
+  } | null>(null);
 
   const outOfServiceMutation = useMutation({
     mutationFn: async ({ truckId, note }: { truckId: number; note: string }) => {
@@ -46,14 +53,84 @@ export function AvailableTruckModal({
     },
   });
 
-  const isPending = outOfServiceMutation.isPending || retireMutation.isPending;
+  const assignToSpotMutation = useMutation({
+    mutationFn: async ({ spotId }: { spotId: number }) => {
+      return api.post('/trucks/spot-assignments', { truckId: truck.id, spotId, date });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts', date] });
+      onClose();
+    },
+  });
+
+  // Build spot list from belts data
+  const allSpots: Array<{
+    id: number;
+    beltLetter: string;
+    spotNumber: number;
+    hasTruck: boolean;
+    currentTruck?: string;
+  }> = [];
+
+  allBelts?.forEach((belt) => {
+    belt.spots.forEach((s) => {
+      allSpots.push({
+        id: s.id,
+        beltLetter: belt.letter,
+        spotNumber: s.number,
+        hasTruck: !!s.truckAssignment,
+        currentTruck: s.truckAssignment?.truck.number,
+      });
+    });
+  });
+
+  allSpots.sort((a, b) => {
+    if (a.beltLetter !== b.beltLetter) return a.beltLetter.localeCompare(b.beltLetter);
+    return a.spotNumber - b.spotNumber;
+  });
+
+  // Home spot info
+  const homeSpotLabel = truck.homeSpot
+    ? `${truck.homeSpot.belt.letter}${truck.homeSpot.number}`
+    : null;
+
+  const homeSpotOccupant = truck.homeSpot
+    ? allSpots.find(s => s.id === truck.homeSpot!.id)
+    : null;
+
+  const isPending = outOfServiceMutation.isPending || retireMutation.isPending || assignToSpotMutation.isPending;
 
   const handleCancel = () => {
-    if (step === 'confirm-retire' || step === 'out-of-service') {
+    if (step === 'confirm-retire' || step === 'out-of-service' || step === 'pick-spot' || step === 'confirm-spot' || step === 'confirm-home-spot') {
       setStep('select');
+      setSelectedSpot(null);
     } else {
       onClose();
     }
+  };
+
+  const handleSendToHomeSpot = () => {
+    if (!truck.homeSpot) return;
+    if (homeSpotOccupant?.hasTruck) {
+      setStep('confirm-home-spot');
+    } else {
+      assignToSpotMutation.mutate({ spotId: truck.homeSpot.id });
+    }
+  };
+
+  const handleSelectSpot = (spot: typeof allSpots[0]) => {
+    setSelectedSpot({
+      id: spot.id,
+      beltLetter: spot.beltLetter,
+      spotNumber: spot.spotNumber,
+    });
+    setStep('confirm-spot');
+  };
+
+  const handleConfirmSpot = () => {
+    if (!selectedSpot) return;
+    assignToSpotMutation.mutate({ spotId: selectedSpot.id });
   };
 
   return (
@@ -72,6 +149,47 @@ export function AvailableTruckModal({
         {step === 'select' && (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {/* Send to Home Spot */}
+              {truck.homeSpot && allBelts && (
+                <button
+                  onClick={handleSendToHomeSpot}
+                  className="w-full p-4 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Home size={24} className="text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-blue-800">
+                        Send to Home Spot ({homeSpotLabel})
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Assign truck to its designated spot
+                        {homeSpotOccupant?.hasTruck && (
+                          <span className="text-amber-600 ml-1">
+                            (currently has {homeSpotOccupant.currentTruck})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* Assign to Spot */}
+              {allBelts && (
+                <button
+                  onClick={() => setStep('pick-spot')}
+                  className="w-full p-4 bg-green-50 border border-green-200 rounded-lg text-left hover:bg-green-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <MapPin size={24} className="text-green-600" />
+                    <div>
+                      <p className="font-semibold text-green-800">Assign to Spot</p>
+                      <p className="text-sm text-gray-600">Pick a belt spot for this truck</p>
+                    </div>
+                  </div>
+                </button>
+              )}
+
               <button
                 onClick={onEditTruck}
                 className="w-full p-4 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
@@ -121,6 +239,110 @@ export function AvailableTruckModal({
               </button>
             </div>
           </>
+        )}
+
+        {step === 'pick-spot' && (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <h3 className="font-semibold text-gray-700 mb-2">Select a spot for truck {truck.number}:</h3>
+              {allSpots.map((spot) => (
+                <button
+                  key={spot.id}
+                  onClick={() => handleSelectSpot(spot)}
+                  className="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-blue-800">
+                      {spot.beltLetter}{spot.spotNumber}
+                    </span>
+                    {spot.hasTruck && (
+                      <span className="text-xs text-gray-500">
+                        Has: {spot.currentTruck}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="p-4 border-t">
+              <button
+                onClick={handleCancel}
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Back
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 'confirm-spot' && selectedSpot && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-center gap-2 text-blue-600">
+              <MapPin size={24} />
+              <span className="font-semibold text-lg">Confirm Assignment</span>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p className="text-lg font-semibold text-gray-800">
+                Assign truck {truck.number} to {selectedSpot.beltLetter}{selectedSpot.spotNumber}?
+              </p>
+              {allSpots.find(s => s.id === selectedSpot.id)?.hasTruck && (
+                <p className="text-amber-600 mt-2">
+                  Truck {allSpots.find(s => s.id === selectedSpot.id)?.currentTruck} will be moved to Available.
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancel}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSpot}
+                disabled={isPending}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isPending ? 'Assigning...' : 'Yes, Assign'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'confirm-home-spot' && truck.homeSpot && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-center gap-2 text-amber-600">
+              <AlertTriangle size={24} />
+              <span className="font-semibold text-lg">Spot Occupied</span>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+              <p className="text-lg font-semibold text-gray-800">
+                {homeSpotLabel} already has truck {homeSpotOccupant?.currentTruck}.
+              </p>
+              <p className="text-gray-600 mt-2">
+                Replace it and move {homeSpotOccupant?.currentTruck} to Available?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancel}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => assignToSpotMutation.mutate({ spotId: truck.homeSpot!.id })}
+                disabled={isPending}
+                className="flex-1 bg-amber-600 text-white py-2 rounded-md hover:bg-amber-700 disabled:opacity-50"
+              >
+                {isPending ? 'Assigning...' : 'Yes, Swap Trucks'}
+              </button>
+            </div>
+          </div>
         )}
 
         {step === 'out-of-service' && (

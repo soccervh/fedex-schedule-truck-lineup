@@ -13,7 +13,7 @@ import { BeltWalkAuditModal } from '../components/BeltWalkAuditModal';
 import type { Belt, BeltSpot, Truck, TruckData } from '../types/lineup';
 
 export default function TruckLineupPage() {
-  const { isManager } = useAuth();
+  const { isTruckMover } = useAuth();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useQueryState('date', {
     defaultValue: new Date().toISOString().split('T')[0],
@@ -83,7 +83,7 @@ export default function TruckLineupPage() {
   }, [deepLinkSpotId, deepLinkBeltId, beltsData]);
 
   const handleTruckLineupSpotClick = (spot: BeltSpot, beltId: number) => {
-    if (!isManager) return;
+    if (!isTruckMover) return;
     const belt = beltsData?.find(b => b.id === beltId);
     if (belt) {
       setTruckAssignmentSpot({ spot, beltLetter: belt.letter });
@@ -264,7 +264,7 @@ export default function TruckLineupPage() {
               <h1 className="text-xl font-semibold">
                 {detailBelt ? detailBelt.name : 'Truck Lineup'}
               </h1>
-              {isManager && !detailBelt && (
+              {isTruckMover && !detailBelt && (
                 <button
                   onClick={() => setWalkBeltOpen(true)}
                   className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
@@ -302,7 +302,7 @@ export default function TruckLineupPage() {
                 spots={detailBelt.spots}
                 onSpotClick={(spot) => handleTruckLineupSpotClick(spot, detailBelt.id)}
                 onBack={handleBackToLineup}
-                isManager={isManager}
+                isManager={isTruckMover}
               />
             ) : (
               <TruckLineupView
@@ -312,14 +312,14 @@ export default function TruckLineupPage() {
                 retiredTrucks={retiredTrucks}
                 onBeltSpotClick={handleTruckLineupSpotClick}
                 onBeltDoubleClick={handleBeltDoubleClick}
-                isManager={isManager}
+                isManager={isTruckMover}
                 onAddTruck={handleAddTruck}
                 onTruckClick={handleTruckClick}
                 onOutOfServiceTruckClick={handleOutOfServiceTruckClick}
                 onRetiredTruckClick={handleRetiredTruckClick}
-                onTruckDropOnSpot={isManager ? handleTruckDropOnSpot : undefined}
-                onTruckDropOnAvailable={isManager ? handleTruckDropOnAvailable : undefined}
-                onTruckDropOnOutOfService={isManager ? handleTruckDropOnOutOfService : undefined}
+                onTruckDropOnSpot={isTruckMover ? handleTruckDropOnSpot : undefined}
+                onTruckDropOnAvailable={isTruckMover ? handleTruckDropOnAvailable : undefined}
+                onTruckDropOnOutOfService={isTruckMover ? handleTruckDropOnOutOfService : undefined}
               />
             )}
           </div>
@@ -362,6 +362,8 @@ export default function TruckLineupPage() {
       {truckModalOpen && (
         <TruckModal
           truck={selectedTruck || undefined}
+          date={selectedDate}
+          assignmentBeltsData={beltsData}
           onClose={handleCloseTruckModal}
         />
       )}
@@ -387,6 +389,7 @@ export default function TruckLineupPage() {
       {availableTruck && (
         <AvailableTruckModal
           truck={availableTruck}
+          allBelts={beltsData}
           date={selectedDate}
           onClose={() => setAvailableTruck(null)}
           onEditTruck={handleEditAvailableTruck}

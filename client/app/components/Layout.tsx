@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 export function AppLayout({ children }: LayoutProps) {
-  const { user, logout, isManager, isOpLead } = useAuth();
+  const { user, logout, isManager, isOpLead, isTruckMover } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -31,7 +31,7 @@ export function AppLayout({ children }: LayoutProps) {
     { path: '/', label: 'Home', show: true },
     { path: '/facility', label: 'Facility', show: true },
     { path: '/truck-lineup', label: 'Truck Lineup', show: true },
-    { path: '/routes', label: 'Routes', show: isManager },
+    { path: '/routes', label: 'Routes', show: isTruckMover },
     { path: '/people', label: 'People', show: isManager },
     { path: '/timeoff', label: 'Time Off', show: isOpLead, badge: pendingCount },
     { path: '/my-schedule', label: 'My Schedule', show: !isOpLead },

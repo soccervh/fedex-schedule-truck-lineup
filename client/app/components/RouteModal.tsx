@@ -9,6 +9,7 @@ interface RouteData {
   assignedArea: 'EO_POOL' | 'UNLOAD' | 'DOCK' | 'BELT_SPOT';
   beltSpotId?: number | null;
   loadLocation?: string | null;
+  schedule?: 'MON_FRI' | 'TUE_FRI' | 'SAT_ONLY';
 }
 
 interface RouteModalProps {
@@ -25,7 +26,21 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
     assignedArea: route?.assignedArea || 'EO_POOL' as const,
     beltSpotId: route?.beltSpotId || null as number | null,
     loadLocation: route?.loadLocation || '' as string,
+    schedule: route?.schedule || 'MON_FRI' as 'MON_FRI' | 'TUE_FRI' | 'SAT_ONLY',
   });
+
+  const routeNum = parseInt(formData.number);
+  const isSaturdayOnly = routeNum >= 500 && routeNum <= 560;
+
+  const handleNumberChange = (value: string) => {
+    const num = parseInt(value);
+    const satOnly = num >= 500 && num <= 560;
+    setFormData(prev => ({
+      ...prev,
+      number: value,
+      schedule: satOnly ? 'SAT_ONLY' : prev.schedule === 'SAT_ONLY' ? 'MON_FRI' : prev.schedule,
+    }));
+  };
 
   const { data: belts } = useQuery({
     queryKey: ['belts-for-routes'],
@@ -100,7 +115,7 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
             <input
               type="text"
               value={formData.number}
-              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+              onChange={(e) => handleNumberChange(e.target.value)}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="e.g. 101"
               required
@@ -126,6 +141,25 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
               <option value="FO">FO</option>
               <option value="PULLER">Puller</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Schedule
+            </label>
+            <select
+              value={formData.schedule}
+              onChange={(e) => setFormData({ ...formData, schedule: e.target.value as any })}
+              className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100 disabled:text-gray-500"
+              disabled={isSaturdayOnly}
+            >
+              <option value="MON_FRI">Mon-Fri</option>
+              <option value="TUE_FRI">Tue-Fri</option>
+              <option value="SAT_ONLY">Saturday Only</option>
+            </select>
+            {isSaturdayOnly && (
+              <p className="text-xs text-gray-500 mt-1">Routes 500-560 are automatically Saturday Only</p>
+            )}
           </div>
 
           <button

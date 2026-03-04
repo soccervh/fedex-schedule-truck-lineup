@@ -1,14 +1,39 @@
 import { Router } from 'express';
 import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import type { RouteSchedule } from '@prisma/client';
 
 const router = Router();
 
-// Get all active routes (all users)
+// Helper: get allowed schedules for a given day of week (0=Sun, 6=Sat)
+function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
+  switch (dayOfWeek) {
+    case 0: return null; // Sunday - no routes
+    case 1: return ['MON_FRI']; // Monday
+    case 6: return ['SAT_ONLY']; // Saturday
+    default: return ['MON_FRI', 'TUE_FRI']; // Tue-Fri
+  }
+}
+
+// Get all active routes (all users), optionally filtered by date
 router.get('/', authenticate, async (req, res) => {
   try {
+    const { date } = req.query;
+
+    const where: any = { isActive: true };
+
+    if (date) {
+      const targetDate = new Date(date as string);
+      const dayOfWeek = targetDate.getUTCDay();
+      const allowed = getAllowedSchedules(dayOfWeek);
+      if (allowed === null) {
+        return res.json([]);
+      }
+      where.schedule = { in: allowed };
+    }
+
     const routes = await prisma.route.findMany({
-      where: { isActive: true },
+      where,
       include: {
         beltSpot: {
           include: {
@@ -28,7 +53,7 @@ router.get('/', authenticate, async (req, res) => {
 // Create route (HIGHEST_MANAGER only)
 router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
-    const { number, assignedArea, beltSpotId, loadLocation } = req.body;
+    const { number, assignedArea, beltSpotId, loadLocation, schedule } = req.body;
 
     if (!number || !assignedArea) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -36,6 +61,15 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
 
     if (assignedArea === 'BELT_SPOT' && !beltSpotId) {
       return res.status(400).json({ error: 'Belt spot required when area is BELT_SPOT' });
+    }
+
+    // Enforce: routes 500-560 must be SAT_ONLY
+    const routeNum = parseInt(number);
+    let routeSchedule = schedule || 'MON_FRI';
+    if (routeNum >= 500 && routeNum <= 560) {
+      routeSchedule = 'SAT_ONLY';
+    } else if (routeSchedule === 'SAT_ONLY') {
+      return res.status(400).json({ error: 'Only routes 500-560 can be Saturday Only' });
     }
 
     const existing = await prisma.route.findUnique({ where: { number } });
@@ -49,6 +83,7 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         assignedArea,
         beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
         loadLocation: loadLocation || null,
+        schedule: routeSchedule,
       },
       include: {
         beltSpot: {
@@ -113,10 +148,21 @@ router.put('/assign-to-spot', authenticate, requireAccessLevel('HIGHEST_MANAGER'
 router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
     const id = parseInt(req.params.id as string);
-    const { number, assignedArea, beltSpotId, loadLocation } = req.body;
+    const { number, assignedArea, beltSpotId, loadLocation, schedule } = req.body;
 
     if (assignedArea === 'BELT_SPOT' && !beltSpotId) {
       return res.status(400).json({ error: 'Belt spot required when area is BELT_SPOT' });
+    }
+
+    // Enforce: routes 500-560 must be SAT_ONLY
+    const routeNum = parseInt(number);
+    let routeSchedule = schedule;
+    if (routeSchedule) {
+      if (routeNum >= 500 && routeNum <= 560) {
+        routeSchedule = 'SAT_ONLY';
+      } else if (routeSchedule === 'SAT_ONLY') {
+        return res.status(400).json({ error: 'Only routes 500-560 can be Saturday Only' });
+      }
     }
 
     const route = await prisma.route.update({
@@ -126,6 +172,7 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
         assignedArea,
         beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
         loadLocation: loadLocation || null,
+        ...(routeSchedule && { schedule: routeSchedule }),
       },
       include: {
         beltSpot: {

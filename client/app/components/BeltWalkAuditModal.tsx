@@ -287,18 +287,22 @@ export function BeltWalkAuditModal({ belts, date, onClose }: BeltWalkAuditModalP
                     {check.status === 'correct' && check.expectedTruck && (
                       <button
                         onClick={() => handleResetSpot(index)}
-                        className="text-green-600 font-semibold text-sm hover:underline"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-semibold active:bg-green-200"
                       >
-                        ✓ Correct
+                        <Check size={16} />
+                        Correct
+                        <span className="text-green-500 text-xs ml-1">undo</span>
                       </button>
                     )}
 
                     {check.status === 'empty' && check.expectedTruck && (
                       <button
                         onClick={() => handleResetSpot(index)}
-                        className="text-amber-600 font-semibold text-sm hover:underline"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm font-semibold active:bg-amber-200"
                       >
-                        Empty — needs key
+                        <CircleOff size={16} />
+                        Empty
+                        <span className="text-amber-500 text-xs ml-1">undo</span>
                       </button>
                     )}
 
