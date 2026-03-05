@@ -133,9 +133,15 @@ export function SpotCardCompact({
 
   const colorKey = route?.loadLocation || 'UNASSIGNED';
   const borderColor = loadLocationBorderColors[colorKey] || 'border-gray-400';
+  // Spot needs filling: has a person on leave, OR has a route but no person assigned
+  const needsFill = assignment?.needsCoverage || (!assignment && !!route);
 
   const getBackgroundClass = () => {
-    if (!assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (!assignment) {
+      // Still show area border color if route has a loadLocation
+      if (route?.loadLocation) return `bg-gray-50 border-2 ${borderColor}`;
+      return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    }
     if (assignment.user.role === 'SWING') return `bg-swing text-white border-2 ${borderColor}`;
     return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white border-2 ${borderColor}`;
   };
@@ -160,7 +166,7 @@ export function SpotCardCompact({
       onDrop={handleDrop}
       disabled={!isManager && !assignment?.needsCoverage}
       className={`w-full p-2 rounded transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
-        assignment?.needsCoverage ? 'outline outline-3 outline-red-500 outline-offset-1' : ''
+        needsFill ? 'outline outline-3 outline-red-500 outline-offset-1' : ''
       } ${
         isManager && truckNumber ? 'cursor-grab active:cursor-grabbing' : isManager ? 'cursor-pointer' : 'cursor-default'
       } ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : isMismatch ? 'ring-2 ring-amber-400' : ''}`}
