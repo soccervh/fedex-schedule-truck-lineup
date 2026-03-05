@@ -132,13 +132,12 @@ export function SpotCardCompact({
     truckAssignment.truck.homeSpotId !== spotId;
 
   const colorKey = route?.loadLocation || 'UNASSIGNED';
-  const areaBorder = `border-2 ${loadLocationBorderColors[colorKey] || 'border-gray-400'}`;
-  const needsFillRing = assignment?.needsCoverage ? 'ring-2 ring-red-500 ring-offset-1' : '';
+  const borderColor = loadLocationBorderColors[colorKey] || 'border-gray-400';
 
   const getBackgroundClass = () => {
-    if (!assignment) return 'bg-gray-50 border-dashed border-gray-300';
-    if (assignment.user.role === 'SWING') return `bg-swing text-white ${areaBorder}`;
-    return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white ${areaBorder}`;
+    if (!assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (assignment.user.role === 'SWING') return `bg-swing text-white border-2 ${borderColor}`;
+    return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white border-2 ${borderColor}`;
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -160,7 +159,9 @@ export function SpotCardCompact({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       disabled={!isManager && !assignment?.needsCoverage}
-      className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${needsFillRing} ${
+      className={`w-full p-2 rounded transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
+        assignment?.needsCoverage ? 'outline outline-3 outline-red-500 outline-offset-1' : ''
+      } ${
         isManager && truckNumber ? 'cursor-grab active:cursor-grabbing' : isManager ? 'cursor-pointer' : 'cursor-default'
       } ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : isMismatch ? 'ring-2 ring-amber-400' : ''}`}
     >
