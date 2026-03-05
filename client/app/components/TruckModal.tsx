@@ -118,6 +118,7 @@ export function TruckModal({ truck, date, assignmentBeltsData, currentSpotAssign
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
       onClose();
     },
   });
