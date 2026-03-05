@@ -457,6 +457,7 @@ export function TruckLineupView({
               isManager={isManager}
               isDragEnabled={!!onTruckDropOnSpot}
               onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, belt.id, truckNumber) : undefined}
+              showHomeMismatch
               highlightTruck={truckSearch}
             />
           ))}
@@ -569,6 +570,7 @@ export function TruckLineupView({
                 isDragEnabled={!!onTruckDropOnSpot}
                 onTruckDrop={onTruckDropOnSpot ? (spot, truckNumber) => onTruckDropOnSpot(spot, mobileBelts[activeBeltTab].id, truckNumber) : undefined}
                 showTruckInHeader={mobileDrawer !== null}
+                showHomeMismatch
                 highlightTruck={truckSearch}
               />
             </div>

@@ -41,6 +41,14 @@ const areaColors: Record<HomeArea, string> = {
   UNASSIGNED: 'bg-gray-400',
 };
 
+const areaBorderColors: Record<HomeArea, string> = {
+  FO: 'border-blue-700',
+  DOC: 'border-orange-700',
+  UNLOAD: 'border-green-700',
+  PULLER: 'border-yellow-700',
+  UNASSIGNED: 'border-gray-400',
+};
+
 function DocSpotCard({
   spot,
   onClick,
@@ -53,12 +61,14 @@ function DocSpotCard({
   const isSwingFilling = spot.assignment?.user.role === 'SWING' && spot.assignment?.originalUserHomeArea;
 
   const getBackgroundClass = () => {
-    if (!spot.assignment) return 'bg-gray-50 border-dashed';
-    if (spot.assignment.needsCoverage) return 'bg-red-100 border-red-400 border-2';
-    if (isSwingFilling) return 'text-white';
-    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white';
-    return `${areaColors[spot.assignment.user.homeArea]} text-white`;
+    if (!spot.assignment) return 'bg-gray-50 border-dashed border-gray-300';
+    const borderColor = areaBorderColors[spot.assignment.user.homeArea];
+    if (isSwingFilling) return `text-white border-2 border-gray-500`;
+    if (spot.assignment.user.role === 'SWING') return `bg-swing text-white border-2 border-gray-500`;
+    return `${areaColors[spot.assignment.user.homeArea]} text-white border-2 ${borderColor}`;
   };
+
+  const needsFillRing = spot.assignment?.needsCoverage ? 'ring-2 ring-red-500 ring-offset-1' : '';
 
   const getSplitStyle = () => {
     if (!isSwingFilling || !spot.assignment?.originalUserHomeArea) return {};
@@ -78,7 +88,7 @@ function DocSpotCard({
     <button
       onClick={onClick}
       disabled={!isManager && !spot.assignment?.needsCoverage}
-      className={`w-14 h-14 p-1 rounded border transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${
+      className={`w-14 h-14 p-1 rounded border transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${needsFillRing} ${
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
       style={getSplitStyle()}

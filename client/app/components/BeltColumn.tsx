@@ -45,6 +45,7 @@ interface BeltColumnProps {
   onTruckDrop?: (spot: Spot, truckNumber: string) => void;
   isDragEnabled?: boolean;
   showTruckInHeader?: boolean;
+  showHomeMismatch?: boolean;
   highlightTruck?: string;
 }
 
@@ -60,6 +61,7 @@ export function BeltColumn({
   onTruckDrop,
   isDragEnabled = false,
   showTruckInHeader = false,
+  showHomeMismatch = false,
   highlightTruck,
 }: BeltColumnProps) {
   // Sort spots by number (1 at top/north, 32 at bottom/south)
@@ -88,6 +90,7 @@ export function BeltColumn({
             isDragEnabled={isDragEnabled}
             onTruckDrop={onTruckDrop ? (truckNumber) => onTruckDrop(spot, truckNumber) : undefined}
             showTruckInHeader={showTruckInHeader}
+            showHomeMismatch={showHomeMismatch}
             highlightTruck={highlightTruck}
           />
         ))}

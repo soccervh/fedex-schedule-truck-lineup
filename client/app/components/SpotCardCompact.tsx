@@ -49,6 +49,7 @@ interface SpotCardCompactProps {
   onTruckDrop?: (truckNumber: string) => void;
   isDragEnabled?: boolean;
   showTruckInHeader?: boolean;
+  showHomeMismatch?: boolean;
   highlightTruck?: string;
 }
 
@@ -68,6 +69,17 @@ const loadLocationColors: Record<string, string> = {
   UNASSIGNED: 'bg-gray-400',
 };
 
+const loadLocationBorderColors: Record<string, string> = {
+  FO: 'border-blue-700',
+  DOC: 'border-orange-700',
+  UNLOAD: 'border-green-700',
+  PULLER: 'border-yellow-700',
+  LABEL_FACER: 'border-amber-700',
+  SCANNER: 'border-teal-700',
+  SPLITTER: 'border-indigo-700',
+  UNASSIGNED: 'border-gray-400',
+};
+
 export function SpotCardCompact({
   spotId,
   spotNumber,
@@ -83,6 +95,7 @@ export function SpotCardCompact({
   onTruckDrop,
   isDragEnabled = false,
   showTruckInHeader = false,
+  showHomeMismatch = false,
   highlightTruck,
 }: SpotCardCompactProps) {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -114,16 +127,18 @@ export function SpotCardCompact({
   const isHighlighted = !!(highlightTruck && truckNumber && truckNumber.toLowerCase().includes(highlightTruck.toLowerCase()));
 
   // The truck in this spot has a different home spot (it's not where it belongs)
-  const isMismatch = truckAssignment &&
+  const isMismatch = showHomeMismatch && truckAssignment &&
     truckAssignment.truck.homeSpotId != null &&
     truckAssignment.truck.homeSpotId !== spotId;
 
+  const colorKey = route?.loadLocation || 'UNASSIGNED';
+  const areaBorder = `border-2 ${loadLocationBorderColors[colorKey] || 'border-gray-400'}`;
+  const needsFillRing = assignment?.needsCoverage ? 'ring-2 ring-red-500 ring-offset-1' : '';
+
   const getBackgroundClass = () => {
-    if (!assignment) return 'bg-gray-50 border-dashed';
-    if (assignment.needsCoverage) return 'bg-red-100 border-red-400 border-2';
-    if (assignment.user.role === 'SWING') return 'bg-swing text-white';
-    const colorKey = route?.loadLocation || 'UNASSIGNED';
-    return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white`;
+    if (!assignment) return 'bg-gray-50 border-dashed border-gray-300';
+    if (assignment.user.role === 'SWING') return `bg-swing text-white ${areaBorder}`;
+    return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white ${areaBorder}`;
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -145,7 +160,7 @@ export function SpotCardCompact({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       disabled={!isManager && !assignment?.needsCoverage}
-      className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
+      className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${needsFillRing} ${
         isManager && truckNumber ? 'cursor-grab active:cursor-grabbing' : isManager ? 'cursor-pointer' : 'cursor-default'
       } ${isHighlighted ? 'ring-2 ring-blue-500 ring-offset-2' : isDragOver ? 'ring-2 ring-blue-500 ring-offset-2' : isMismatch ? 'ring-2 ring-amber-400' : ''}`}
     >

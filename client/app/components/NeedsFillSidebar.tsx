@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { formatSpotName } from '../utils/belt';
+
+const BELT_LETTERS = ['A', 'B', 'C', 'D'];
 
 const assignAreaLabels: Record<string, string> = {
   UNASSIGNED: 'Unassigned',
@@ -38,17 +41,38 @@ interface NeedsFillSidebarProps {
 }
 
 export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSidebarProps) {
+  const [activeBelt, setActiveBelt] = useState<string | null>(null);
+
+  const filteredNeeds = activeBelt
+    ? coverageNeeds.filter((need) => need.spot.belt.letter === activeBelt)
+    : coverageNeeds;
+
   return (
     <div className="w-48 bg-white border-l border-gray-200 flex flex-col">
       <div className="p-3 border-b border-gray-200 bg-red-50">
         <h3 className="font-semibold text-red-800">NEEDS FILL</h3>
+        <div className="flex gap-1 mt-2">
+          {BELT_LETTERS.map((letter) => (
+            <button
+              key={letter}
+              onClick={() => setActiveBelt(activeBelt === letter ? null : letter)}
+              className={`flex-1 px-1 py-0.5 text-xs font-bold rounded ${
+                activeBelt === letter
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white text-red-800 border border-red-300 hover:bg-red-100'
+              }`}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {coverageNeeds.length === 0 ? (
+        {filteredNeeds.length === 0 ? (
           <div className="p-3 text-sm text-gray-500">All spots filled</div>
         ) : (
-          coverageNeeds.map((need) => {
+          filteredNeeds.map((need) => {
             const spotName = formatSpotName(need.spot.belt.letter, need.spot.number);
             const routeDisplay = need.route ? `R:${need.route.number}` : '—';
             const areaDisplay = need.route?.loadLocation
@@ -78,7 +102,7 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
         <span className="text-sm font-medium text-gray-700">
-          {coverageNeeds.length} spot{coverageNeeds.length !== 1 ? 's' : ''} open
+          {filteredNeeds.length}{activeBelt ? `/${coverageNeeds.length}` : ''} spot{filteredNeeds.length !== 1 ? 's' : ''} open
         </span>
       </div>
     </div>
