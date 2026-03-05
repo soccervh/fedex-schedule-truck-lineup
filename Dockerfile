@@ -19,6 +19,7 @@ RUN cd server && npx prisma generate && npm run build
 # --- Production ---
 FROM base AS production
 ENV NODE_ENV=production
+ENV TZ=America/New_York
 
 # Copy server production deps + built output
 COPY server/package.json server/package-lock.json ./server/
