@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
+import { todayET } from '../lib/date';
 import { PersonModal } from '../components/PersonModal';
 import { Link } from 'react-router';
 import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react';
@@ -34,12 +35,29 @@ export default function People() {
   const [searchQuery, setSearchQuery] = useState('');
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
   const [accessLevelFilter, setAccessLevelFilter] = useQueryState('accessLevel', { defaultValue: '' });
+  const [selectedDate, setSelectedDate] = useState(todayET());
 
   const { data: people, isLoading } = useQuery({
     queryKey: ['people'],
     queryFn: async () => {
       const res = await api.get('/people');
       return res.data;
+    },
+  });
+
+  const { data: driverRoutes } = useQuery({
+    queryKey: ['driver-routes', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/people/driver-routes?date=${selectedDate}`);
+      return res.data as Record<string, { assignmentId: string; spotId: number; routeId: number | null; routeNumber: string | null; beltLetter: string; spotNumber: number }>;
+    },
+  });
+
+  const { data: allRoutes } = useQuery({
+    queryKey: ['routes', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/routes?date=${selectedDate}`);
+      return res.data as Array<{ id: number; number: string; beltSpotId: number | null; beltSpot: any }>;
     },
   });
 
@@ -86,6 +104,61 @@ export default function People() {
     },
   });
 
+  const assignRouteMutation = useMutation({
+    mutationFn: async ({ userId, routeId, force }: { userId: string; routeId: number; force?: boolean }) => {
+      const res = await api.post('/people/assign-route', { userId, routeId, date: selectedDate, force });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+    },
+    onError: (error: any, variables) => {
+      if (error.response?.status === 409) {
+        const { currentAssignee } = error.response.data;
+        if (confirm(`This spot is already assigned to ${currentAssignee}. Replace them?`)) {
+          assignRouteMutation.mutate({ ...variables, force: true });
+        }
+      }
+    },
+  });
+
+  const unassignRouteMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      return api.delete(`/assignments/${assignmentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+    },
+  });
+
+  // Build a map of routeId → driver name for showing who's on each route
+  const routeDriverMap: Record<number, string> = {};
+  if (driverRoutes && people) {
+    for (const [userId, info] of Object.entries(driverRoutes)) {
+      if (info.routeId) {
+        const person = people.find((p: any) => p.id === userId);
+        if (person) {
+          routeDriverMap[info.routeId] = person.name.split(' ')[0]; // First name
+        }
+      }
+    }
+  }
+
+  const handleRouteChange = (person: any, value: string) => {
+    const currentRoute = driverRoutes?.[person.id];
+    if (value === '') {
+      // Unassign
+      if (currentRoute?.assignmentId) {
+        unassignRouteMutation.mutate(currentRoute.assignmentId);
+      }
+    } else {
+      const routeId = parseInt(value);
+      assignRouteMutation.mutate({ userId: person.id, routeId });
+    }
+  };
+
   const handleDeleteInvite = (id: string, name: string) => {
     if (confirm(`Delete pending invite for ${name}?`)) {
       deleteInviteMutation.mutate(id);
@@ -130,18 +203,24 @@ export default function People() {
         )}
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-2 flex-wrap items-center">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by name..."
-          className="px-3 py-2 border rounded-md"
+          placeholder="Search..."
+          className="px-2 py-1.5 border rounded-md text-sm w-32 sm:w-40"
+        />
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="px-2 py-1.5 border rounded-md text-sm"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="px-3 py-2 border rounded-md"
+          className="px-2 py-1.5 border rounded-md text-sm"
         >
           <option value="">All Roles</option>
           <option value="DRIVER">Driver</option>
@@ -153,7 +232,7 @@ export default function People() {
         <select
           value={accessLevelFilter}
           onChange={(e) => setAccessLevelFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md"
+          className="hidden sm:block px-2 py-1.5 border rounded-md text-sm"
         >
           <option value="">All Access Levels</option>
           <option value="HIGHEST_MANAGER">Highest Manager</option>
@@ -166,24 +245,27 @@ export default function People() {
       {isLoading ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Route
+                </th>
+                <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Access Level
                 </th>
                 {isHighestManager && (
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
                 )}
@@ -192,7 +274,7 @@ export default function People() {
             <tbody className="divide-y divide-gray-200">
               {filteredPeople?.map((person: any) => (
                 <tr key={person.id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">
+                  <td className="px-3 py-3 whitespace-nowrap font-medium text-sm">
                     {canViewDetails ? (
                       <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                         {person.name}
@@ -201,10 +283,10 @@ export default function People() {
                       person.name
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap text-gray-500 text-sm">
                     {person.email}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       person.role === 'SWING' ? 'bg-gray-100' :
                       person.role === 'MANAGER' ? 'bg-purple-100 text-purple-700' :
@@ -215,7 +297,41 @@ export default function People() {
                       {roleLabels[person.role] || person.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-3 py-3 whitespace-nowrap">
+                    {['DRIVER', 'SWING'].includes(person.role) ? (
+                      canViewDetails ? (
+                        <select
+                          value={driverRoutes?.[person.id]?.routeId ?? ''}
+                          onChange={(e) => handleRouteChange(person, e.target.value)}
+                          className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white max-w-[90px] sm:max-w-none"
+                          disabled={assignRouteMutation.isPending || unassignRouteMutation.isPending}
+                        >
+                          <option value="">— None —</option>
+                          {allRoutes
+                            ?.filter((r: any) => r.beltSpotId)
+                            .map((r: any) => {
+                              const driver = routeDriverMap[r.id];
+                              const isCurrent = driverRoutes?.[person.id]?.routeId === r.id;
+                              const label = driver && !isCurrent ? `R:${r.number} (${driver})` : `R:${r.number}`;
+                              return (
+                                <option key={r.id} value={r.id}>
+                                  {label}
+                                </option>
+                              );
+                            })}
+                        </select>
+                      ) : (
+                        <span className="text-sm text-gray-600">
+                          {driverRoutes?.[person.id]?.routeNumber
+                            ? `R:${driverRoutes[person.id].routeNumber}`
+                            : '—'}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
                     {person.accessLevel && (
                       <span className={`px-2 py-1 text-xs rounded-full ${accessLevelColors[person.accessLevel] || 'bg-gray-100 text-gray-700'}`}>
                         {accessLevelLabels[person.accessLevel] || person.accessLevel}
@@ -223,10 +339,10 @@ export default function People() {
                     )}
                   </td>
                   {isHighestManager && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-2 sm:px-3 py-3 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleEdit(person)}
-                        className="text-gray-400 hover:text-blue-600 mr-3"
+                        className="text-gray-400 hover:text-blue-600 mr-2"
                       >
                         <Pencil size={16} />
                       </button>

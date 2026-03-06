@@ -3,8 +3,19 @@ import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/aut
 import { hashPassword } from '../utils/password';
 import { prisma } from '../lib/prisma';
 import { ensureBalancesReset, getUsedBalances } from '../utils/balance';
+import type { RouteSchedule } from '@prisma/client';
 
 const router = Router();
+
+// Helper: get allowed schedules for a given day of week (0=Sun, 6=Sat)
+function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
+  switch (dayOfWeek) {
+    case 0: return null; // Sunday - no routes
+    case 1: return ['MON_FRI']; // Monday
+    case 6: return ['SAT_ONLY']; // Saturday
+    default: return ['MON_FRI', 'TUE_FRI']; // Tue-Fri
+  }
+}
 
 // Get all people (high-access users see more details)
 router.get('/', authenticate, async (req: AuthRequest, res) => {
@@ -31,6 +42,137 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Get people error:', error);
     res.status(500).json({ error: 'Failed to get people' });
+  }
+});
+
+// Get driver routes for a given date
+router.get('/driver-routes', authenticate, async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ error: 'date query parameter is required' });
+    }
+
+    const targetDate = new Date(date as string);
+    const dayOfWeek = targetDate.getUTCDay();
+    const allowed = getAllowedSchedules(dayOfWeek);
+
+    if (allowed === null) {
+      return res.json({});
+    }
+
+    const assignments = await prisma.assignment.findMany({
+      where: {
+        date: targetDate,
+        user: {
+          role: { in: ['DRIVER', 'SWING'] },
+          isActive: true,
+        },
+      },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        spot: {
+          include: {
+            belt: { select: { letter: true } },
+            routes: {
+              where: {
+                isActive: true,
+                schedule: { in: allowed },
+              },
+              select: { id: true, number: true },
+            },
+          },
+        },
+      },
+    });
+
+    const result: Record<string, any> = {};
+    for (const a of assignments) {
+      const route = a.spot.routes[0]; // A spot typically has one route
+      result[a.userId] = {
+        assignmentId: a.id,
+        spotId: a.spotId,
+        routeId: route?.id ?? null,
+        routeNumber: route?.number ?? null,
+        beltLetter: a.spot.belt.letter,
+        spotNumber: a.spot.number,
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get driver routes error:', error);
+    res.status(500).json({ error: 'Failed to get driver routes' });
+  }
+});
+
+// Assign a driver to a route's belt spot for a date
+router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
+  try {
+    const { userId, routeId, date, force } = req.body;
+
+    if (!userId || !routeId || !date) {
+      return res.status(400).json({ error: 'userId, routeId, and date are required' });
+    }
+
+    // Look up route
+    const route = await prisma.route.findUnique({
+      where: { id: routeId },
+    });
+
+    if (!route || !route.isActive) {
+      return res.status(400).json({ error: 'Route not found or inactive' });
+    }
+
+    if (!route.beltSpotId) {
+      return res.status(400).json({ error: 'Route is not assigned to a belt spot' });
+    }
+
+    const targetDate = new Date(date);
+
+    // Check if spot already has a different user
+    const existingAssignment = await prisma.assignment.findUnique({
+      where: { spotId_date: { spotId: route.beltSpotId, date: targetDate } },
+      include: { user: { select: { id: true, name: true } } },
+    });
+
+    if (existingAssignment && existingAssignment.userId !== userId && !force) {
+      return res.status(409).json({
+        error: 'Spot already assigned',
+        currentAssignee: existingAssignment.user.name,
+        currentAssigneeId: existingAssignment.user.id,
+      });
+    }
+
+    // Delete driver's existing assignment for this date on any other spot
+    await prisma.assignment.deleteMany({
+      where: {
+        userId,
+        date: targetDate,
+        spotId: { not: route.beltSpotId },
+      },
+    });
+
+    // Upsert assignment at route's spot
+    const assignment = await prisma.assignment.upsert({
+      where: { spotId_date: { spotId: route.beltSpotId, date: targetDate } },
+      create: {
+        spotId: route.beltSpotId,
+        userId,
+        date: targetDate,
+        truckNumber: '',
+        isOverride: true,
+      },
+      update: {
+        userId,
+        isOverride: true,
+      },
+    });
+
+    res.json(assignment);
+  } catch (error) {
+    console.error('Assign route error:', error);
+    res.status(500).json({ error: 'Failed to assign route' });
   }
 });
 
