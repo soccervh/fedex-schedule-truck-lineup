@@ -177,6 +177,8 @@ router.get('/route-assignments', authenticate, async (req, res) => {
 
     const targetDate = new Date(date as string);
 
+    const dayOfWeek = targetDate.getUTCDay();
+
     const routes = await prisma.route.findMany({
       where: {
         isActive: true,
@@ -189,10 +191,12 @@ router.get('/route-assignments', authenticate, async (req, res) => {
           },
         },
         beltSpot: true,
+        driver: {
+          select: { id: true, name: true, role: true, workSchedule: true },
+        },
       },
       orderBy: { number: 'asc' },
     });
-
 
     // For routes with a beltSpotId, find the assignment on that belt spot for this date to get the driver
     const beltSpotIds = routes.filter(r => r.beltSpotId).map(r => r.beltSpotId!);
@@ -212,18 +216,28 @@ router.get('/route-assignments', authenticate, async (req, res) => {
       beltAssignments.map(a => [a.spotId, a])
     );
 
-    // Check time-off for drivers
-    const driverUserIds = beltAssignments.map(a => a.userId);
-    const timeOffs = driverUserIds.length > 0
+    // Collect all user IDs for time-off checks (both assignments and route drivers)
+    const allDriverIds = new Set<string>();
+    for (const a of beltAssignments) allDriverIds.add(a.userId);
+    for (const r of routes) { if (r.driverId) allDriverIds.add(r.driverId); }
+
+    const timeOffs = allDriverIds.size > 0
       ? await prisma.timeOff.findMany({
           where: {
-            userId: { in: driverUserIds },
+            userId: { in: [...allDriverIds] },
             date: targetDate,
             status: 'APPROVED',
           },
         })
       : [];
     const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
+
+    // Check if a driver's work schedule includes this day
+    function isWorkDay(workSchedule: string, dow: number): boolean {
+      if (workSchedule === 'MON_FRI') return dow >= 1 && dow <= 5;
+      if (workSchedule === 'TUE_SAT') return dow >= 2 && dow <= 6;
+      return false;
+    }
 
     // Map loadLocation to section
     const SORT_LOCATIONS = new Set(['SORT', 'LABEL_FACER', 'SCANNER', 'SPLITTER']);
@@ -232,7 +246,7 @@ router.get('/route-assignments', authenticate, async (req, res) => {
       if (loadLocation === 'DOC') return 'DOC';
       if (loadLocation === 'UNLOAD') return 'UNLOAD';
       if (SORT_LOCATIONS.has(loadLocation)) return 'SORT';
-      return 'SORT'; // default fallback
+      return 'SORT';
     }
 
     const result: Record<string, any[]> = { FO: [], DOC: [], UNLOAD: [], SORT: [] };
@@ -242,13 +256,17 @@ router.get('/route-assignments', authenticate, async (req, res) => {
         ? beltAssignmentBySpot.get(route.beltSpotId)
         : null;
 
-      const driver = beltAssignment
-        ? { id: beltAssignment.user.id, name: beltAssignment.user.name, role: beltAssignment.user.role }
-        : null;
+      // Use explicit assignment driver, or fall back to route's permanent driver
+      let driver: { id: string; name: string; role: string } | null = null;
+      let driverIsOff = false;
 
-      const driverIsOff = beltAssignment
-        ? timeOffUserIds.has(beltAssignment.userId)
-        : false;
+      if (beltAssignment) {
+        driver = { id: beltAssignment.user.id, name: beltAssignment.user.name, role: beltAssignment.user.role };
+        driverIsOff = timeOffUserIds.has(beltAssignment.userId);
+      } else if (route.driver && isWorkDay(route.driver.workSchedule, dayOfWeek)) {
+        driver = { id: route.driver.id, name: route.driver.name, role: route.driver.role };
+        driverIsOff = timeOffUserIds.has(route.driver.id);
+      }
 
       const section = getSection(route.loadLocation!);
       result[section].push({

@@ -3,19 +3,8 @@ import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/aut
 import { hashPassword } from '../utils/password';
 import { prisma } from '../lib/prisma';
 import { ensureBalancesReset, getUsedBalances } from '../utils/balance';
-import type { RouteSchedule } from '@prisma/client';
 
 const router = Router();
-
-// Helper: get allowed schedules for a given day of week (0=Sun, 6=Sat)
-function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
-  switch (dayOfWeek) {
-    case 0: return null; // Sunday - no routes
-    case 1: return ['MON_FRI']; // Monday
-    case 6: return ['SAT_ONLY']; // Saturday
-    default: return ['MON_FRI', 'TUE_FRI']; // Tue-Fri
-  }
-}
 
 // Get all people (high-access users see more details)
 router.get('/', authenticate, async (req: AuthRequest, res) => {
@@ -44,58 +33,35 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Get driver routes for a given date
+// Get driver routes — based on permanent route.driverId assignments
 router.get('/driver-routes', authenticate, async (req, res) => {
   try {
-    const { date } = req.query;
-    if (!date) {
-      return res.status(400).json({ error: 'date query parameter is required' });
-    }
-
-    const targetDate = new Date(date as string);
-    const dayOfWeek = targetDate.getUTCDay();
-    const allowed = getAllowedSchedules(dayOfWeek);
-
-    if (allowed === null) {
-      return res.json({});
-    }
-
-    const assignments = await prisma.assignment.findMany({
+    const routes = await prisma.route.findMany({
       where: {
-        date: targetDate,
-        user: {
-          role: { in: ['DRIVER', 'SWING'] },
-          isActive: true,
-        },
+        isActive: true,
+        driverId: { not: null },
+        beltSpotId: { not: null },
       },
       include: {
-        user: { select: { id: true, name: true, role: true } },
-        spot: {
+        beltSpot: {
           include: {
             belt: { select: { letter: true } },
-            routes: {
-              where: {
-                isActive: true,
-                schedule: { in: allowed },
-              },
-              select: { id: true, number: true },
-            },
           },
         },
       },
     });
 
     const result: Record<string, any> = {};
-    for (const a of assignments) {
-      const route = a.spot.routes[0]; // A spot typically has one route
-      result[a.userId] = {
-        assignmentId: a.id,
-        spotId: a.spotId,
-        routeId: route?.id ?? null,
-        routeNumber: route?.number ?? null,
-        beltLetter: a.spot.belt.letter,
-        spotNumber: a.spot.number,
-      };
+    for (const route of routes) {
+      if (route.driverId && route.beltSpot) {
+        result[route.driverId] = {
+          routeId: route.id,
+          routeNumber: route.number,
+          spotId: route.beltSpotId,
+          beltLetter: route.beltSpot.belt.letter,
+          spotNumber: route.beltSpot.number,
+        };
+      }
     }
 
     res.json(result);
@@ -105,16 +71,15 @@ router.get('/driver-routes', authenticate, async (req, res) => {
   }
 });
 
-// Assign a driver to a route's belt spot for a date
+// Assign a driver permanently to a route
 router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
-    const { userId, routeId, date, force } = req.body;
+    const { userId, routeId } = req.body;
 
-    if (!userId || !routeId || !date) {
-      return res.status(400).json({ error: 'userId, routeId, and date are required' });
+    if (!userId || !routeId) {
+      return res.status(400).json({ error: 'userId and routeId are required' });
     }
 
-    // Look up route
     const route = await prisma.route.findUnique({
       where: { id: routeId },
     });
@@ -123,55 +88,50 @@ router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async 
       return res.status(400).json({ error: 'Route not found or inactive' });
     }
 
-    if (!route.beltSpotId) {
-      return res.status(400).json({ error: 'Route is not assigned to a belt spot' });
-    }
-
-    const targetDate = new Date(date);
-
-    // Check if spot already has a different user
-    const existingAssignment = await prisma.assignment.findUnique({
-      where: { spotId_date: { spotId: route.beltSpotId, date: targetDate } },
-      include: { user: { select: { id: true, name: true } } },
+    // Check if another route already has this driver
+    const existingRoute = await prisma.route.findFirst({
+      where: { driverId: userId, isActive: true, id: { not: routeId } },
     });
 
-    if (existingAssignment && existingAssignment.userId !== userId && !force) {
-      return res.status(409).json({
-        error: 'Spot already assigned',
-        currentAssignee: existingAssignment.user.name,
-        currentAssigneeId: existingAssignment.user.id,
+    if (existingRoute) {
+      // Clear driver from old route
+      await prisma.route.update({
+        where: { id: existingRoute.id },
+        data: { driverId: null },
       });
     }
 
-    // Delete driver's existing assignment for this date on any other spot
-    await prisma.assignment.deleteMany({
-      where: {
-        userId,
-        date: targetDate,
-        spotId: { not: route.beltSpotId },
-      },
+    // Set driver on route
+    const updated = await prisma.route.update({
+      where: { id: routeId },
+      data: { driverId: userId },
     });
 
-    // Upsert assignment at route's spot
-    const assignment = await prisma.assignment.upsert({
-      where: { spotId_date: { spotId: route.beltSpotId, date: targetDate } },
-      create: {
-        spotId: route.beltSpotId,
-        userId,
-        date: targetDate,
-        truckNumber: '',
-        isOverride: true,
-      },
-      update: {
-        userId,
-        isOverride: true,
-      },
-    });
-
-    res.json(assignment);
+    res.json(updated);
   } catch (error) {
     console.error('Assign route error:', error);
     res.status(500).json({ error: 'Failed to assign route' });
+  }
+});
+
+// Unassign a driver from their route
+router.post('/unassign-route', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    await prisma.route.updateMany({
+      where: { driverId: userId, isActive: true },
+      data: { driverId: null },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Unassign route error:', error);
+    res.status(500).json({ error: 'Failed to unassign route' });
   }
 });
 

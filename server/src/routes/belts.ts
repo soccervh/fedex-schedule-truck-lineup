@@ -15,6 +15,13 @@ function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
   }
 }
 
+// Check if a driver's work schedule includes the given day of week
+function isWorkDay(workSchedule: string, dayOfWeek: number): boolean {
+  if (workSchedule === 'MON_FRI') return dayOfWeek >= 1 && dayOfWeek <= 5;
+  if (workSchedule === 'TUE_SAT') return dayOfWeek >= 2 && dayOfWeek <= 6;
+  return false;
+}
+
 // Get all belts with spot counts
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -99,6 +106,15 @@ router.get('/all/assignments', authenticate, async (req, res) => {
               where: { isActive: true },
               select: {
                 id: true, number: true, loadLocation: true, schedule: true,
+                driverId: true,
+                driver: {
+                  select: {
+                    id: true,
+                    name: true,
+                    role: true,
+                    workSchedule: true,
+                  },
+                },
                 facilitySpot: {
                   select: {
                     id: true, number: true, label: true,
@@ -118,19 +134,30 @@ router.get('/all/assignments', authenticate, async (req, res) => {
       },
     });
 
-    // Get all assigned user IDs across all belts
-    const assignedUserIds = belts
-      .flatMap(belt => belt.spots)
-      .flatMap(s => s.assignments)
-      .map(a => a.userId);
+    // Collect all user IDs that may need time-off checks:
+    // both from explicit assignments AND from route.driver fallbacks
+    const allUserIds = new Set<string>();
+    for (const belt of belts) {
+      for (const spot of belt.spots) {
+        for (const a of spot.assignments) {
+          allUserIds.add(a.userId);
+        }
+        const route = spot.routes[0];
+        if (route?.driverId) {
+          allUserIds.add(route.driverId);
+        }
+      }
+    }
 
-    const timeOffs = await prisma.timeOff.findMany({
-      where: {
-        userId: { in: assignedUserIds },
-        date: targetDate,
-        status: 'APPROVED',
-      },
-    });
+    const timeOffs = allUserIds.size > 0
+      ? await prisma.timeOff.findMany({
+          where: {
+            userId: { in: [...allUserIds] },
+            date: targetDate,
+            status: 'APPROVED',
+          },
+        })
+      : [];
 
     const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
 
@@ -143,28 +170,42 @@ router.get('/all/assignments', authenticate, async (req, res) => {
       spots: belt.spots.map(spot => {
         const assignment = spot.assignments[0];
         const rawTruckAssignment = spot.truckAssignments[0];
-        // Filter out carried-forward assignments for trucks that have since been retired or moved OOS
         const truckAssignment = rawTruckAssignment &&
           rawTruckAssignment.truck.status !== 'RETIRED' &&
           rawTruckAssignment.truck.status !== 'OUT_OF_SERVICE'
           ? rawTruckAssignment : undefined;
-        const isOff = assignment ? timeOffUserIds.has(assignment.userId) : false;
+
+        const route = spot.routes[0] || null;
+
+        // Use explicit assignment if exists, otherwise fall back to route's permanent driver
+        let effectiveAssignment: any = null;
+        if (assignment) {
+          const isOff = timeOffUserIds.has(assignment.userId);
+          effectiveAssignment = {
+            id: assignment.id,
+            truckNumber: assignment.truckNumber,
+            isOverride: assignment.isOverride,
+            user: assignment.user,
+            needsCoverage: isOff,
+          };
+        } else if (route?.driver && route.driver.id && isWorkDay(route.driver.workSchedule, dayOfWeek)) {
+          const isOff = timeOffUserIds.has(route.driver.id);
+          effectiveAssignment = {
+            id: `route-driver-${route.id}`,
+            truckNumber: '',
+            isOverride: false,
+            user: { id: route.driver.id, name: route.driver.name, role: route.driver.role },
+            needsCoverage: isOff,
+          };
+        }
 
         return {
           id: spot.id,
           number: spot.number,
           routeOverride: spot.routeOverride,
-          route: spot.routes[0] || null,
+          route: route ? { id: route.id, number: route.number, loadLocation: route.loadLocation, schedule: route.schedule, facilitySpot: route.facilitySpot } : null,
           pulledRoutes: spot.pulledRoutes,
-          assignment: assignment
-            ? {
-                id: assignment.id,
-                truckNumber: assignment.truckNumber,
-                isOverride: assignment.isOverride,
-                user: assignment.user,
-                needsCoverage: isOff,
-              }
-            : null,
+          assignment: effectiveAssignment,
           truckAssignment: truckAssignment
             ? {
                 id: truckAssignment.id,

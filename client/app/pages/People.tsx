@@ -46,10 +46,10 @@ export default function People() {
   });
 
   const { data: driverRoutes } = useQuery({
-    queryKey: ['driver-routes', selectedDate],
+    queryKey: ['driver-routes'],
     queryFn: async () => {
-      const res = await api.get(`/people/driver-routes?date=${selectedDate}`);
-      return res.data as Record<string, { assignmentId: string; spotId: number; routeId: number | null; routeNumber: string | null; beltLetter: string; spotNumber: number }>;
+      const res = await api.get('/people/driver-routes');
+      return res.data as Record<string, { routeId: number; routeNumber: string; spotId: number; beltLetter: string; spotNumber: number }>;
     },
   });
 
@@ -105,27 +105,19 @@ export default function People() {
   });
 
   const assignRouteMutation = useMutation({
-    mutationFn: async ({ userId, routeId, force }: { userId: string; routeId: number; force?: boolean }) => {
-      const res = await api.post('/people/assign-route', { userId, routeId, date: selectedDate, force });
+    mutationFn: async ({ userId, routeId }: { userId: string; routeId: number }) => {
+      const res = await api.post('/people/assign-route', { userId, routeId });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
     },
-    onError: (error: any, variables) => {
-      if (error.response?.status === 409) {
-        const { currentAssignee } = error.response.data;
-        if (confirm(`This spot is already assigned to ${currentAssignee}. Replace them?`)) {
-          assignRouteMutation.mutate({ ...variables, force: true });
-        }
-      }
-    },
   });
 
   const unassignRouteMutation = useMutation({
-    mutationFn: async (assignmentId: string) => {
-      return api.delete(`/assignments/${assignmentId}`);
+    mutationFn: async (userId: string) => {
+      return api.post('/people/unassign-route', { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
@@ -147,12 +139,8 @@ export default function People() {
   }
 
   const handleRouteChange = (person: any, value: string) => {
-    const currentRoute = driverRoutes?.[person.id];
     if (value === '') {
-      // Unassign
-      if (currentRoute?.assignmentId) {
-        unassignRouteMutation.mutate(currentRoute.assignmentId);
-      }
+      unassignRouteMutation.mutate(person.id);
     } else {
       const routeId = parseInt(value);
       assignRouteMutation.mutate({ userId: person.id, routeId });

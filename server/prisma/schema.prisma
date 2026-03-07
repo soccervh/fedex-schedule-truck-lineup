@@ -99,6 +99,7 @@ model User {
   timeOffRequests      TimeOff[]
   facilityAssignments  FacilityAssignment[]
   inviteTokens         InviteToken[]
+  assignedRoutes       Route[]
 }
 
 model Belt {
@@ -255,6 +256,8 @@ model Route {
   pullerBeltSpot  Spot?          @relation("RoutePullerSpot", fields: [pullerBeltSpotId], references: [id])
   facilitySpotId  Int?
   facilitySpot    FacilitySpot?  @relation(fields: [facilitySpotId], references: [id])
+  driverId        String?
+  driver          User?          @relation(fields: [driverId], references: [id])
   loadLocation    LoadLocation?
   schedule        RouteSchedule  @default(MON_FRI)
   isActive        Boolean        @default(true)
