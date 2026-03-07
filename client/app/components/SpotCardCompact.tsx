@@ -28,6 +28,12 @@ interface SpotRoute {
   id: number;
   number: string;
   loadLocation?: string | null;
+  facilitySpot?: {
+    id: number;
+    number: number;
+    label?: string;
+    area?: { name: string; subArea?: string | null };
+  } | null;
 }
 
 interface PulledRoute {
@@ -54,6 +60,30 @@ interface SpotCardCompactProps {
   showHomeMismatch?: boolean;
   highlightTruck?: string;
 }
+
+const facilityPositionLabel = (spot: SpotRoute['facilitySpot']): string | null => {
+  if (!spot) return null;
+  const label = spot.label;
+  const area = spot.area;
+  if (!area) return label || `Spot ${spot.number}`;
+  const areaName = area.name;
+  // Use label if it exists, e.g. "FS1", "QB2", "S3", "Ramp1"
+  if (label) {
+    // Map common abbreviations to readable names
+    if (label.startsWith('FS')) return `Fine Sort ${label.slice(2)}`;
+    if (label.startsWith('QB')) return `Quarterback ${label.slice(2)}`;
+    if (label.startsWith('LF')) return `Label Facer ${label.slice(2)}`;
+    if (label.startsWith('SC')) return `Scanner ${label.slice(2)}`;
+    if (label.startsWith('SP')) return `Splitter ${label.slice(2)}`;
+    if (label.startsWith('Ramp')) return label;
+    if (label.startsWith('S') && !label.startsWith('SC') && !label.startsWith('SP')) return `Secondary ${label.slice(1)}`;
+    return label;
+  }
+  // FO spots just have numbers
+  if (areaName === 'FO') return `FO ${spot.number}`;
+  if (areaName === 'UNLOAD') return `Unload ${spot.number}`;
+  return `${areaName} ${spot.number}`;
+};
 
 const truckTypeLabel = (t?: string) => {
   const labels: Record<string, string> = { REACH: 'Reach', NINE_HUNDRED: '900', SPRINTER: 'Sprinter', VAN: 'Van', RENTAL: 'Rental', UNKNOWN: 'Unknown' };
@@ -203,6 +233,11 @@ export function SpotCardCompact({
             </div>
           )}
         </>
+      )}
+      {route?.facilitySpot && (
+        <div className="text-[10px] opacity-80 mt-0.5 truncate w-full">
+          {facilityPositionLabel(route.facilitySpot)}
+        </div>
       )}
       {pulledRoutes && pulledRoutes.length > 0 && (
         <div className="text-[10px] text-yellow-300 mt-0.5 truncate w-full">

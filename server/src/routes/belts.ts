@@ -97,7 +97,15 @@ router.get('/all/assignments', authenticate, async (req, res) => {
             },
             routes: {
               where: { isActive: true },
-              select: { id: true, number: true, loadLocation: true, schedule: true },
+              select: {
+                id: true, number: true, loadLocation: true, schedule: true,
+                facilitySpot: {
+                  select: {
+                    id: true, number: true, label: true,
+                    area: { select: { name: true, subArea: true } },
+                  },
+                },
+              },
               orderBy: { number: 'asc' },
             },
             pulledRoutes: {
