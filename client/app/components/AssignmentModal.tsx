@@ -287,9 +287,20 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                 <option value="">Add route to pull...</option>
                 {allRoutes
                   ?.filter((r: any) => r.isActive && r.id !== spotRoutes?.[0]?.id && !pulledRoutes?.some((pr: any) => pr.id === r.id))
+                  .sort((a: any, b: any) => {
+                    const aSameBelt = a.beltSpot?.belt?.letter === beltLetter ? 0 : 1;
+                    const bSameBelt = b.beltSpot?.belt?.letter === beltLetter ? 0 : 1;
+                    if (aSameBelt !== bSameBelt) return aSameBelt - bSameBelt;
+                    if (aSameBelt === 0 && bSameBelt === 0) {
+                      const aDist = Math.abs((a.beltSpot?.number || 0) - spot.number);
+                      const bDist = Math.abs((b.beltSpot?.number || 0) - spot.number);
+                      return aDist - bDist;
+                    }
+                    return 0;
+                  })
                   .map((r: any) => (
                     <option key={r.id} value={r.id}>
-                      R:{r.number}{r.pullerBeltSpotId && r.pullerBeltSpotId !== spot.id ? ' (assigned to other puller)' : ''}
+                      R:{r.number}{r.beltSpot ? ` (${r.beltSpot.belt.letter}${r.beltSpot.number})` : ''}{r.pullerBeltSpotId && r.pullerBeltSpotId !== spot.id ? ' - other puller' : ''}
                     </option>
                   ))}
               </select>
