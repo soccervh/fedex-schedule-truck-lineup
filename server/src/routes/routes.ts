@@ -77,12 +77,14 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
       return res.status(409).json({ error: 'Route number already exists' });
     }
 
+    const effectiveBeltSpotId = assignedArea === 'BELT_SPOT' ? beltSpotId : null;
     const route = await prisma.route.create({
       data: {
         number,
         assignedArea,
-        beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
+        beltSpotId: effectiveBeltSpotId,
         loadLocation: loadLocation || null,
+        pullerBeltSpotId: loadLocation === 'PULLER' && effectiveBeltSpotId ? effectiveBeltSpotId : null,
         schedule: routeSchedule,
       },
       include: {
@@ -165,13 +167,15 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
       }
     }
 
+    const effectiveBeltSpotId = assignedArea === 'BELT_SPOT' ? beltSpotId : null;
     const route = await prisma.route.update({
       where: { id },
       data: {
         number,
         assignedArea,
-        beltSpotId: assignedArea === 'BELT_SPOT' ? beltSpotId : null,
+        beltSpotId: effectiveBeltSpotId,
         loadLocation: loadLocation || null,
+        pullerBeltSpotId: loadLocation === 'PULLER' && effectiveBeltSpotId ? effectiveBeltSpotId : undefined,
         ...(routeSchedule && { schedule: routeSchedule }),
       },
       include: {
@@ -246,9 +250,16 @@ router.patch('/:id/load-location', authenticate, requireAccessLevel('HIGHEST_MAN
     const id = parseInt(req.params.id as string);
     const { loadLocation } = req.body;
 
+    // If setting to PULLER, auto-assign this route to be pulled by its own belt spot
+    const existing = await prisma.route.findUnique({ where: { id } });
+    const data: any = { loadLocation: loadLocation || null };
+    if (loadLocation === 'PULLER' && existing?.beltSpotId) {
+      data.pullerBeltSpotId = existing.beltSpotId;
+    }
+
     const route = await prisma.route.update({
       where: { id },
-      data: { loadLocation: loadLocation || null },
+      data,
     });
 
     res.json(route);
