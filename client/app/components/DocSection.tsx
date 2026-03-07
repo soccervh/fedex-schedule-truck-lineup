@@ -139,7 +139,7 @@ export function DocSection({
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">Secondary</div>
             <div className="flex flex-wrap gap-1 justify-center">
-              {secondarySpots.map((spot) => (
+              {[...secondarySpots].reverse().map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
               ))}
             </div>
@@ -159,7 +159,7 @@ export function DocSection({
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">Fine Sort</div>
             <div className="flex flex-wrap gap-1 justify-center">
-              {fineSortSpots.map((spot) => (
+              {[...fineSortSpots].reverse().map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
               ))}
             </div>

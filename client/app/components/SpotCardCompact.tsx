@@ -67,7 +67,8 @@ const facilityPositionLabel = (spot: SpotRoute['facilitySpot']): string | null =
   const area = spot.area;
   if (!area) return label || `Spot ${spot.number}`;
   const areaName = area.name;
-  const side = area.subArea?.replace(' Side', '') || '';
+  const rawSide = area.subArea?.replace(' Side', '') || '';
+  const side = rawSide === 'D/C' ? 'C/D' : rawSide === 'B/A' ? 'A/B' : rawSide;
   // Use label if it exists, e.g. "FS1", "QB2", "S3", "Ramp1"
   if (label) {
     if (label.startsWith('FS')) return `Fine Sort ${label.slice(2)}`;
