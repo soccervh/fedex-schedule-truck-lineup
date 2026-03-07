@@ -192,6 +192,11 @@ router.get('/swing', authenticate, async (req, res) => {
               select: {
                 number: true,
                 belt: { select: { letter: true } },
+                routes: {
+                  where: { isActive: true },
+                  select: { number: true },
+                  take: 1,
+                },
               },
             },
           },
@@ -204,7 +209,7 @@ router.get('/swing', authenticate, async (req, res) => {
       id: d.id,
       name: d.name,
       assignedSpot: d.assignments[0]
-        ? `${d.assignments[0].spot.belt.letter}${d.assignments[0].spot.number}`
+        ? `${d.assignments[0].spot.belt.letter}${d.assignments[0].spot.number}${d.assignments[0].spot.routes[0] ? ` R:${d.assignments[0].spot.routes[0].number}` : ''}`
         : null,
     }));
 
