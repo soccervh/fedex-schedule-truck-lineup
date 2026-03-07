@@ -32,4 +32,4 @@ COPY server/prisma ./server/prisma
 COPY --from=client-build /app/client/build ./client/build
 
 EXPOSE 3001
-CMD cd server && npx prisma migrate deploy && cd /app && node server/dist/index.js
+CMD cd server && sh prisma/deploy.sh && cd /app && node server/dist/index.js
