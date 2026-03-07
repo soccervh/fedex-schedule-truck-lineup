@@ -203,7 +203,7 @@ router.get('/route-assignments', authenticate, async (req, res) => {
             date: targetDate,
           },
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, name: true, role: true } },
           },
         })
       : [];
@@ -243,7 +243,7 @@ router.get('/route-assignments', authenticate, async (req, res) => {
         : null;
 
       const driver = beltAssignment
-        ? { id: beltAssignment.user.id, name: beltAssignment.user.name }
+        ? { id: beltAssignment.user.id, name: beltAssignment.user.name, role: beltAssignment.user.role }
         : null;
 
       const driverIsOff = beltAssignment

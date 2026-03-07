@@ -23,7 +23,7 @@ interface RouteAssignment {
   id: number;
   number: string;
   facilitySpotId: number | null;
-  driver: { id: string; name: string } | null;
+  driver: { id: string; name: string; role?: string } | null;
   driverIsOff: boolean;
 }
 
@@ -54,9 +54,10 @@ function UnloadSpotCard({
   isManager: boolean;
 }) {
   const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
+  const isSwing = spot.assignment?.user.role === 'SWING' || mappedRoutes.some(r => r.driver && !r.driverIsOff && r.driver.role === 'SWING');
   const getBackgroundClass = () => {
     if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    if (spot.assignment?.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    if (isSwing) return 'bg-swing text-white border-2 border-gray-500';
     return 'bg-unload text-white border-2 border-green-700';
   };
 
@@ -160,7 +161,7 @@ export function UnloadSection({
                     key={route.id}
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       route.driver && !route.driverIsOff
-                        ? 'bg-green-500 text-white'
+                        ? route.driver.role === 'SWING' ? 'bg-swing text-white' : 'bg-green-500 text-white'
                         : 'bg-green-100 text-green-700 border border-green-300'
                     }`}
                   >
