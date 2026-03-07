@@ -251,8 +251,12 @@ router.patch('/:id/load-location', authenticate, requireAccessLevel('HIGHEST_MAN
     const { loadLocation } = req.body;
 
     // If setting to PULLER, auto-assign this route to be pulled by its own belt spot
+    // Always clear facilitySpotId when loadLocation changes (route no longer belongs to old section)
     const existing = await prisma.route.findUnique({ where: { id } });
     const data: any = { loadLocation: loadLocation || null };
+    if (existing?.loadLocation !== loadLocation) {
+      data.facilitySpotId = null;
+    }
     if (loadLocation === 'PULLER' && existing?.beltSpotId) {
       data.pullerBeltSpotId = existing.beltSpotId;
     }
