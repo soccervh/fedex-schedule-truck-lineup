@@ -1,5 +1,5 @@
--- AlterTable: remove homeArea column from User
-ALTER TABLE "User" DROP COLUMN "homeArea";
+-- AlterTable: remove homeArea column from User (idempotent)
+ALTER TABLE "User" DROP COLUMN IF EXISTS "homeArea";
 
--- DropEnum
-DROP TYPE "HomeArea";
+-- DropEnum (idempotent)
+DROP TYPE IF EXISTS "HomeArea";

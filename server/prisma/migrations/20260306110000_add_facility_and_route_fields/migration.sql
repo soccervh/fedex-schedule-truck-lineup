@@ -1,11 +1,19 @@
--- CreateEnum
-CREATE TYPE "LoadLocation" AS ENUM ('UNASSIGNED', 'DOC', 'UNLOAD', 'LABEL_FACER', 'SCANNER', 'SPLITTER', 'FO', 'PULLER');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'LoadLocation') THEN
+    CREATE TYPE "LoadLocation" AS ENUM ('UNASSIGNED', 'DOC', 'UNLOAD', 'LABEL_FACER', 'SCANNER', 'SPLITTER', 'FO', 'PULLER');
+  END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "RouteSchedule" AS ENUM ('MON_FRI', 'TUE_FRI', 'SAT_ONLY');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RouteSchedule') THEN
+    CREATE TYPE "RouteSchedule" AS ENUM ('MON_FRI', 'TUE_FRI', 'SAT_ONLY');
+  END IF;
+END $$;
 
--- CreateTable
-CREATE TABLE "FacilityArea" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "FacilityArea" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "subArea" TEXT,
@@ -13,8 +21,8 @@ CREATE TABLE "FacilityArea" (
     CONSTRAINT "FacilityArea_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "FacilitySpot" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "FacilitySpot" (
     "id" SERIAL NOT NULL,
     "areaId" INTEGER NOT NULL,
     "number" INTEGER NOT NULL,
@@ -24,8 +32,8 @@ CREATE TABLE "FacilitySpot" (
     CONSTRAINT "FacilitySpot_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "FacilityAssignment" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "FacilityAssignment" (
     "id" TEXT NOT NULL,
     "facilitySpotId" INTEGER NOT NULL,
     "userId" TEXT NOT NULL,
@@ -36,25 +44,38 @@ CREATE TABLE "FacilityAssignment" (
     CONSTRAINT "FacilityAssignment_pkey" PRIMARY KEY ("id")
 );
 
--- AlterTable: add new columns to Route
-ALTER TABLE "Route" ADD COLUMN "facilitySpotId" INTEGER;
-ALTER TABLE "Route" ADD COLUMN "loadLocation" "LoadLocation";
-ALTER TABLE "Route" ADD COLUMN "schedule" "RouteSchedule" NOT NULL DEFAULT 'MON_FRI';
+-- AlterTable: add new columns to Route (idempotent)
+ALTER TABLE "Route" ADD COLUMN IF NOT EXISTS "facilitySpotId" INTEGER;
+ALTER TABLE "Route" ADD COLUMN IF NOT EXISTS "loadLocation" "LoadLocation";
+ALTER TABLE "Route" ADD COLUMN IF NOT EXISTS "schedule" "RouteSchedule" NOT NULL DEFAULT 'MON_FRI';
 
--- CreateIndex
-CREATE UNIQUE INDEX "FacilitySpot_areaId_number_key" ON "FacilitySpot"("areaId", "number");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "FacilitySpot_areaId_number_key" ON "FacilitySpot"("areaId", "number");
 
--- CreateIndex
-CREATE UNIQUE INDEX "FacilityAssignment_facilitySpotId_date_key" ON "FacilityAssignment"("facilitySpotId", "date");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "FacilityAssignment_facilitySpotId_date_key" ON "FacilityAssignment"("facilitySpotId", "date");
 
--- AddForeignKey
-ALTER TABLE "FacilitySpot" ADD CONSTRAINT "FacilitySpot_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "FacilityArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FacilitySpot_areaId_fkey') THEN
+    ALTER TABLE "FacilitySpot" ADD CONSTRAINT "FacilitySpot_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "FacilityArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "FacilityAssignment" ADD CONSTRAINT "FacilityAssignment_facilitySpotId_fkey" FOREIGN KEY ("facilitySpotId") REFERENCES "FacilitySpot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FacilityAssignment_facilitySpotId_fkey') THEN
+    ALTER TABLE "FacilityAssignment" ADD CONSTRAINT "FacilityAssignment_facilitySpotId_fkey" FOREIGN KEY ("facilitySpotId") REFERENCES "FacilitySpot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "FacilityAssignment" ADD CONSTRAINT "FacilityAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FacilityAssignment_userId_fkey') THEN
+    ALTER TABLE "FacilityAssignment" ADD CONSTRAINT "FacilityAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Route" ADD CONSTRAINT "Route_facilitySpotId_fkey" FOREIGN KEY ("facilitySpotId") REFERENCES "FacilitySpot"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Route_facilitySpotId_fkey') THEN
+    ALTER TABLE "Route" ADD CONSTRAINT "Route_facilitySpotId_fkey" FOREIGN KEY ("facilitySpotId") REFERENCES "FacilitySpot"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
