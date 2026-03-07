@@ -99,12 +99,22 @@ export default function FacilityPage() {
           <h1 className="text-xl font-semibold">
             {detailBelt ? detailBelt.name : 'Facility View'}
           </h1>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+            />
+            {selectedDate !== todayET() && (
+              <button
+                onClick={() => setSelectedDate(todayET())}
+                className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+              >
+                Return to Today
+              </button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
