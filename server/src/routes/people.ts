@@ -175,19 +175,40 @@ router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async 
   }
 });
 
-// Get swing drivers
+// Get swing drivers (optionally with assignment info for a date)
 router.get('/swing', authenticate, async (req, res) => {
   try {
+    const { date } = req.query;
+
     const swingDrivers = await prisma.user.findMany({
       where: { role: 'SWING', isActive: true },
       select: {
         id: true,
         name: true,
+        assignments: {
+          where: date ? { date: new Date(date as string) } : { date: new Date(0) },
+          select: {
+            spot: {
+              select: {
+                number: true,
+                belt: { select: { letter: true } },
+              },
+            },
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
 
-    res.json(swingDrivers);
+    const result = swingDrivers.map(d => ({
+      id: d.id,
+      name: d.name,
+      assignedSpot: d.assignments[0]
+        ? `${d.assignments[0].spot.belt.letter}${d.assignments[0].spot.number}`
+        : null,
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error('Get swing drivers error:', error);
     res.status(500).json({ error: 'Failed to get swing drivers' });

@@ -47,9 +47,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
   });
 
   const { data: swingDrivers } = useQuery({
-    queryKey: ['swing-drivers'],
+    queryKey: ['swing-drivers', date],
     queryFn: async () => {
-      const res = await api.get('/people/swing');
+      const res = await api.get(`/people/swing?date=${date}`);
       return res.data;
     },
   });
@@ -370,9 +370,12 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                 >
                   <option value="">No person assigned</option>
                   {spot.assignment?.needsCoverage ? (
-                    swingDrivers?.map((driver: any) => (
+                    swingDrivers
+                      ?.slice()
+                      .sort((a: any, b: any) => (a.assignedSpot ? 1 : 0) - (b.assignedSpot ? 1 : 0))
+                      .map((driver: any) => (
                       <option key={driver.id} value={driver.id}>
-                        {driver.name}
+                        {driver.name}{driver.assignedSpot ? ` (covering ${driver.assignedSpot})` : ''}
                       </option>
                     ))
                   ) : (
