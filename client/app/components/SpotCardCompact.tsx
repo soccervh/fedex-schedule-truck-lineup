@@ -67,21 +67,21 @@ const facilityPositionLabel = (spot: SpotRoute['facilitySpot']): string | null =
   const area = spot.area;
   if (!area) return label || `Spot ${spot.number}`;
   const areaName = area.name;
+  const side = area.subArea?.replace(' Side', '') || '';
   // Use label if it exists, e.g. "FS1", "QB2", "S3", "Ramp1"
   if (label) {
-    // Map common abbreviations to readable names
     if (label.startsWith('FS')) return `Fine Sort ${label.slice(2)}`;
     if (label.startsWith('QB')) return `Quarterback ${label.slice(2)}`;
-    if (label.startsWith('LF')) return `Label Facer ${label.slice(2)}`;
-    if (label.startsWith('SC')) return `Scanner ${label.slice(2)}`;
-    if (label.startsWith('SP')) return `Splitter ${label.slice(2)}`;
+    if (label.startsWith('LF')) return `Label Facer ${label.slice(2)} ${side}`;
+    if (label.startsWith('SC')) return `Scanner ${label.slice(2)} ${side}`;
+    if (label.startsWith('SP')) return `Splitter ${label.slice(2)} ${side}`;
     if (label.startsWith('Ramp')) return label;
     if (label.startsWith('S') && !label.startsWith('SC') && !label.startsWith('SP')) return `Secondary ${label.slice(1)}`;
     return label;
   }
   // FO spots just have numbers
   if (areaName === 'FO') return `FO ${spot.number}`;
-  if (areaName === 'UNLOAD') return `Unload ${spot.number}`;
+  if (areaName === 'UNLOAD') return `Unload ${spot.number} ${side}`;
   return `${areaName} ${spot.number}`;
 };
 
