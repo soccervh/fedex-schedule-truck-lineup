@@ -3,12 +3,48 @@ interface SwingDriver {
   name: string;
 }
 
+interface RouteAssignment {
+  id: number;
+  number: string;
+  facilitySpotId: number | null;
+  driver: { id: string; name: string; role?: string } | null;
+  driverIsOff: boolean;
+}
+
+interface RouteAssignments {
+  FO: RouteAssignment[];
+  DOC: RouteAssignment[];
+  UNLOAD: RouteAssignment[];
+  SORT: RouteAssignment[];
+}
+
 interface SwingDriversSidebarProps {
   swingDrivers: SwingDriver[];
+  routeAssignments?: RouteAssignments;
   onDriverClick?: (driver: SwingDriver) => void;
 }
 
-export function SwingDriversSidebar({ swingDrivers, onDriverClick }: SwingDriversSidebarProps) {
+export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverClick }: SwingDriversSidebarProps) {
+  // Build a map of swing driver id -> assigned position
+  const driverPosition = new Map<string, string>();
+  if (routeAssignments) {
+    for (const [section, routes] of Object.entries(routeAssignments)) {
+      for (const route of routes) {
+        if (route.driver && !route.driverIsOff && route.driver.role === 'SWING') {
+          driverPosition.set(route.driver.id, section);
+        }
+      }
+    }
+  }
+
+  // Sort: unassigned first, assigned to bottom
+  const sorted = [...swingDrivers].sort((a, b) => {
+    const aAssigned = driverPosition.has(a.id) ? 1 : 0;
+    const bAssigned = driverPosition.has(b.id) ? 1 : 0;
+    if (aAssigned !== bAssigned) return aAssigned - bAssigned;
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div className="w-48 bg-white border-l border-gray-200 flex flex-col">
       <div className="p-3 border-b border-gray-200 bg-swing">
@@ -16,18 +52,24 @@ export function SwingDriversSidebar({ swingDrivers, onDriverClick }: SwingDriver
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {swingDrivers.length === 0 ? (
+        {sorted.length === 0 ? (
           <div className="p-3 text-sm text-gray-500">No swing drivers</div>
         ) : (
-          swingDrivers.map((driver) => (
-            <button
-              key={driver.id}
-              onClick={() => onDriverClick?.(driver)}
-              className="w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors"
-            >
-              <div className="font-medium text-gray-900">{driver.name}</div>
-            </button>
-          ))
+          sorted.map((driver) => {
+            const position = driverPosition.get(driver.id);
+            return (
+              <button
+                key={driver.id}
+                onClick={() => onDriverClick?.(driver)}
+                className={`w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors ${position ? 'opacity-60' : ''}`}
+              >
+                <div className="font-medium text-gray-900">{driver.name}</div>
+                {position && (
+                  <div className="text-xs text-gray-500 mt-0.5">{position}</div>
+                )}
+              </button>
+            );
+          })
         )}
       </div>
 

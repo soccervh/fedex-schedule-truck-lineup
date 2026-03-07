@@ -187,6 +187,7 @@ export default function FacilityPage() {
         <div className="hidden md:contents">
           <SwingDriversSidebar
             swingDrivers={swingDriversData || []}
+            routeAssignments={routeAssignmentsData}
           />
           <NeedsFillSidebar
             coverageNeeds={coverageData?.needsCoverage || []}
