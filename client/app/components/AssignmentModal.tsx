@@ -155,6 +155,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
       queryClient.invalidateQueries({ queryKey: ['coverage'] });
       queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-areas'] });
       onClose();
     },
   });
