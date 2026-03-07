@@ -2,19 +2,20 @@ FROM node:20-alpine AS base
 
 WORKDIR /app
 
-# --- Build client ---
-FROM base AS client-build
-COPY client/package.json client/package-lock.json ./client/
-RUN cd client && npm install && npm install @rollup/rollup-linux-x64-musl
-COPY client/ ./client/
-RUN cd client && npm run build
-
-# --- Build server ---
+# --- Build server first ---
 FROM base AS server-build
 COPY server/package.json server/package-lock.json ./server/
 RUN cd server && npm install
 COPY server/ ./server/
 RUN cd server && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate && npm run build
+
+# --- Build client after server (COPY --from creates dependency to avoid parallel OOM) ---
+FROM base AS client-build
+COPY --from=server-build /app/server/package.json /tmp/server-done
+COPY client/package.json client/package-lock.json ./client/
+RUN cd client && npm install && npm install @rollup/rollup-linux-x64-musl
+COPY client/ ./client/
+RUN cd client && NODE_OPTIONS="--max-old-space-size=512" npm run build
 
 # --- Production ---
 FROM base AS production
