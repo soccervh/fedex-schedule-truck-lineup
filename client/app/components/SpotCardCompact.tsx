@@ -65,9 +65,10 @@ const loadLocationColors: Record<string, string> = {
   DOC: 'bg-doc',
   UNLOAD: 'bg-unload',
   PULLER: 'bg-puller',
-  LABEL_FACER: 'bg-amber-500',
-  SCANNER: 'bg-teal-500',
-  SPLITTER: 'bg-indigo-500',
+  SORT: 'bg-purple-500',
+  LABEL_FACER: 'bg-purple-500',
+  SCANNER: 'bg-purple-500',
+  SPLITTER: 'bg-purple-500',
   UNASSIGNED: 'bg-gray-400',
 };
 
@@ -76,9 +77,10 @@ const loadLocationLeftStripe: Record<string, string> = {
   DOC: 'border-l-orange-500',
   UNLOAD: 'border-l-green-500',
   PULLER: 'border-l-yellow-500',
-  LABEL_FACER: 'border-l-amber-500',
-  SCANNER: 'border-l-teal-500',
-  SPLITTER: 'border-l-indigo-500',
+  SORT: 'border-l-purple-500',
+  LABEL_FACER: 'border-l-purple-500',
+  SCANNER: 'border-l-purple-500',
+  SPLITTER: 'border-l-purple-500',
   UNASSIGNED: 'border-l-gray-300',
 };
 

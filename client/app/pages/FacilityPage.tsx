@@ -160,16 +160,8 @@ export default function FacilityPage() {
             <span>Puller</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-500"></div>
-            <span>Label Facer</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-teal-500"></div>
-            <span>Scanner</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-indigo-500"></div>
-            <span>Splitter</span>
+            <div className="w-4 h-4 rounded bg-purple-500"></div>
+            <span>Sort</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-swing"></div>

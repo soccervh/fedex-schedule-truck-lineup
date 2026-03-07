@@ -226,7 +226,7 @@ router.get('/route-assignments', authenticate, async (req, res) => {
     const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
 
     // Map loadLocation to section
-    const SORT_LOCATIONS = new Set(['LABEL_FACER', 'SCANNER', 'SPLITTER']);
+    const SORT_LOCATIONS = new Set(['SORT', 'LABEL_FACER', 'SCANNER', 'SPLITTER']);
     function getSection(loadLocation: string): string {
       if (loadLocation === 'FO') return 'FO';
       if (loadLocation === 'DOC') return 'DOC';

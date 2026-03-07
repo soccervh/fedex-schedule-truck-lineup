@@ -237,9 +237,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                   <option value="UNASSIGNED">Unassigned</option>
                   <option value="DOC">Doc</option>
                   <option value="UNLOAD">Unload</option>
-                  <option value="LABEL_FACER">Label Facer</option>
-                  <option value="SCANNER">Scanner</option>
-                  <option value="SPLITTER">Splitter</option>
+                  <option value="SORT">Sort</option>
                   <option value="FO">FO</option>
                   <option value="PULLER">Puller</option>
                 </select>

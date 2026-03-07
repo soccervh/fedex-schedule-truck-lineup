@@ -237,6 +237,7 @@ enum LoadLocation {
   UNASSIGNED
   DOC
   UNLOAD
+  SORT
   LABEL_FACER
   SCANNER
   SPLITTER
