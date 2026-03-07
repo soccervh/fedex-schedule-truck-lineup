@@ -54,9 +54,9 @@ export default function People() {
   });
 
   const { data: allRoutes } = useQuery({
-    queryKey: ['routes', selectedDate],
+    queryKey: ['routes-all'],
     queryFn: async () => {
-      const res = await api.get(`/routes?date=${selectedDate}`);
+      const res = await api.get('/routes');
       return res.data as Array<{ id: number; number: string; beltSpotId: number | null; beltSpot: any }>;
     },
   });
