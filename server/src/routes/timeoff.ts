@@ -264,6 +264,51 @@ router.post('/import', authenticate, requireAccessLevel('HIGHEST_MANAGER'), asyn
   }
 });
 
+// Quick mark-sick for a user on a given date (OP_LEAD+)
+router.post('/mark-sick', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
+  try {
+    const { userId, date } = req.body;
+
+    if (!userId || !date) {
+      return res.status(400).json({ error: 'userId and date required' });
+    }
+
+    const targetDate = new Date(date);
+
+    // Check if entry already exists
+    const existing = await prisma.timeOff.findUnique({
+      where: { userId_date: { userId, date: targetDate } },
+    });
+
+    if (existing) {
+      // If it exists but isn't approved, approve it
+      if (existing.status !== 'APPROVED') {
+        const updated = await prisma.timeOff.update({
+          where: { id: existing.id },
+          data: { status: 'APPROVED', type: 'SICK' },
+        });
+        return res.json(updated);
+      }
+      return res.json(existing);
+    }
+
+    const timeOff = await prisma.timeOff.create({
+      data: {
+        userId,
+        date: targetDate,
+        type: 'SICK',
+        status: 'APPROVED',
+        isImported: false,
+      },
+    });
+
+    res.status(201).json(timeOff);
+  } catch (error) {
+    console.error('Mark sick error:', error);
+    res.status(500).json({ error: 'Failed to mark sick' });
+  }
+});
+
 // Get coverage needs for a date
 router.get('/coverage-needs', authenticate, async (req, res) => {
   try {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
-import { X, Truck, Check } from 'lucide-react';
+import { X, Truck, Check, AlertTriangle } from 'lucide-react';
 
 interface Spot {
   id: number;
@@ -145,6 +145,25 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       setTimeout(() => setRouteSaved(false), 2000);
     },
   });
+
+  const markSickMutation = useMutation({
+    mutationFn: async ({ userId, date }: { userId: string; date: string }) => {
+      return api.post('/timeoff/mark-sick', { userId, date });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['belt', beltId, date] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['coverage'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
+      onClose();
+    },
+  });
+
+  const handleMarkSick = () => {
+    if (!spot.assignment) return;
+    if (!confirm(`Mark ${spot.assignment.user.name} as sick for today?`)) return;
+    markSickMutation.mutate({ userId: spot.assignment.user.id, date });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,6 +322,19 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                   ))}
               </select>
             </div>
+          )}
+
+          {/* Mark Sick Button */}
+          {spot.assignment && !spot.assignment.needsCoverage && (
+            <button
+              type="button"
+              onClick={handleMarkSick}
+              disabled={markSickMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 border border-red-300 text-red-800 rounded-md hover:bg-red-100 transition-colors"
+            >
+              <AlertTriangle size={16} />
+              {markSickMutation.isPending ? 'Marking...' : 'Mark Sick'}
+            </button>
           )}
 
           {/* Swap Truck Button */}
