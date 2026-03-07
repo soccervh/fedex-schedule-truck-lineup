@@ -236,7 +236,7 @@ export function SpotCardCompact({
         </>
       )}
       {route?.facilitySpot && (
-        <div className="text-[10px] opacity-80 mt-0.5 truncate w-full">
+        <div className={`text-[10px] mt-0.5 truncate w-full ${assignment ? 'opacity-80' : 'text-gray-600 dark:text-gray-200'}`}>
           {facilityPositionLabel(route.facilitySpot)}
         </div>
       )}
