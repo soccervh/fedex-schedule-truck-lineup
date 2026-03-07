@@ -42,7 +42,7 @@ function formatName(fullName: string): string {
 
 export function FacilityAssignmentModal({ spot, sectionName, routes, onClose }: FacilityAssignmentModalProps) {
   const queryClient = useQueryClient();
-  const spotLabel = spot.label || `${sectionName === 'UNLOAD' ? 'U' : ''}${spot.number}`;
+  const spotLabel = spot.label || `${sectionName === 'UNLOAD' ? 'U' : sectionName === 'FO' ? 'FO' : ''}${spot.number}`;
   const sideLabel = spot.side ? ` (${spot.side})` : '';
 
   // Local optimistic state: track which routes are assigned to this spot
@@ -63,13 +63,11 @@ export function FacilityAssignmentModal({ spot, sectionName, routes, onClose }: 
   });
 
   const handleAssign = (routeId: number) => {
-    // Optimistically update local state
     setLocalRoutes(prev => prev.map(r => r.id === routeId ? { ...r, facilitySpotId: spot.id } : r));
     mutation.mutate({ routeId, facilitySpotId: spot.id });
   };
 
   const handleRemove = (routeId: number) => {
-    // Optimistically update local state
     setLocalRoutes(prev => prev.map(r => r.id === routeId ? { ...r, facilitySpotId: null } : r));
     mutation.mutate({ routeId, facilitySpotId: null });
   };
@@ -120,7 +118,7 @@ export function FacilityAssignmentModal({ spot, sectionName, routes, onClose }: 
             {availableRoutes.length === 0 ? (
               <p className="text-sm text-gray-400">No more routes available</p>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-48 overflow-y-auto">
                 {availableRoutes.map(route => {
                   const atOtherSpot = route.facilitySpotId != null;
                   return (

@@ -176,18 +176,11 @@ router.get('/route-assignments', authenticate, async (req, res) => {
     }
 
     const targetDate = new Date(date as string);
-    const dayOfWeek = targetDate.getUTCDay();
-    const allowedSchedules = getAllowedSchedules(dayOfWeek);
-
-    if (allowedSchedules === null) {
-      return res.json({ FO: [], DOC: [], UNLOAD: [], SORT: [] });
-    }
 
     const routes = await prisma.route.findMany({
       where: {
         isActive: true,
         loadLocation: { not: null },
-        schedule: { in: allowedSchedules },
       },
       include: {
         facilitySpot: {

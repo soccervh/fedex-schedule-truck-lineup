@@ -51,9 +51,10 @@ function FOSpotCard({
   onClick: () => void;
   isManager: boolean;
 }) {
+  const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
   const getBackgroundClass = () => {
-    if (!spot.assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (spot.assignment?.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
     return 'bg-fo text-white border-2 border-blue-700';
   };
 
@@ -124,7 +125,7 @@ export function FOSection({
         FO ({totalX}/{totalY})
       </button>
       {expanded && (
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-3 space-y-2">
           <div className="flex flex-wrap gap-1 justify-center">
             {sortedSpots.map((spot) => (
               <FOSpotCard
@@ -137,6 +138,28 @@ export function FOSection({
             ))}
           </div>
 
+          {/* Unassigned route list */}
+          {routes.filter(r => !r.facilitySpotId).length > 0 && (
+            <div className="border-t border-blue-200 pt-2">
+              <div className="text-xs text-blue-600 font-medium mb-1 text-center">Routes</div>
+              <div className="flex flex-wrap gap-1 justify-center">
+                {routes.filter(r => !r.facilitySpotId).map(route => (
+                  <div
+                    key={route.id}
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      route.driver && !route.driverIsOff
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-blue-100 text-blue-700 border border-blue-300'
+                    }`}
+                  >
+                    {route.driver && !route.driverIsOff
+                      ? formatName(route.driver.name)
+                      : `R:${route.number}`}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

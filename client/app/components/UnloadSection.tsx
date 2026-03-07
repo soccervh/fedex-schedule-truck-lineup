@@ -53,9 +53,10 @@ function UnloadSpotCard({
   onClick: () => void;
   isManager: boolean;
 }) {
+  const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
   const getBackgroundClass = () => {
-    if (!spot.assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (spot.assignment?.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
     return 'bg-unload text-white border-2 border-green-700';
   };
 
@@ -148,6 +149,29 @@ export function UnloadSection({
               </div>
             </div>
           </div>
+
+          {/* Unassigned route list */}
+          {routes.filter(r => !r.facilitySpotId).length > 0 && (
+            <div className="border-t border-green-200 pt-2">
+              <div className="text-xs text-green-600 font-medium mb-1 text-center">Routes</div>
+              <div className="flex flex-wrap gap-1 justify-center">
+                {routes.filter(r => !r.facilitySpotId).map(route => (
+                  <div
+                    key={route.id}
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      route.driver && !route.driverIsOff
+                        ? 'bg-green-500 text-white'
+                        : 'bg-green-100 text-green-700 border border-green-300'
+                    }`}
+                  >
+                    {route.driver && !route.driverIsOff
+                      ? formatName(route.driver.name)
+                      : `R:${route.number}`}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       )}

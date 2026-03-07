@@ -55,9 +55,10 @@ function DocSpotCard({
   onClick: () => void;
   isManager: boolean;
 }) {
+  const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
   const getBackgroundClass = () => {
-    if (!spot.assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (spot.assignment?.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
     return 'bg-doc text-white border-2 border-orange-700';
   };
 
@@ -174,6 +175,29 @@ export function DocSection({
               ))}
             </div>
           </div>
+
+          {/* Unassigned route list */}
+          {routes.filter(r => !r.facilitySpotId).length > 0 && (
+            <div className="border-t border-orange-200 pt-2">
+              <div className="text-xs text-orange-600 font-medium mb-1 text-center">Routes</div>
+              <div className="flex flex-wrap gap-1 justify-center">
+                {routes.filter(r => !r.facilitySpotId).map(route => (
+                  <div
+                    key={route.id}
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      route.driver && !route.driverIsOff
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-orange-100 text-orange-700 border border-orange-300'
+                    }`}
+                  >
+                    {route.driver && !route.driverIsOff
+                      ? formatName(route.driver.name)
+                      : `R:${route.number}`}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       )}

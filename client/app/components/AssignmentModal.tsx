@@ -75,8 +75,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['belt', beltId, date] });
-      queryClient.invalidateQueries({ queryKey: ['all-belts', date] });
-      queryClient.invalidateQueries({ queryKey: ['coverage', date] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['coverage'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
       onClose();
     },
   });
@@ -87,8 +88,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['belt', beltId, date] });
-      queryClient.invalidateQueries({ queryKey: ['all-belts', date] });
-      queryClient.invalidateQueries({ queryKey: ['coverage', date] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['coverage'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
       onClose();
     },
   });

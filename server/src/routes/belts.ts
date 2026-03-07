@@ -96,7 +96,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
               },
             },
             routes: {
-              where: allowedSchedules ? routeWhere : { isActive: true, schedule: { in: [] } },
+              where: { isActive: true },
               select: { id: true, number: true, loadLocation: true, schedule: true },
               orderBy: { number: 'asc' },
             },
