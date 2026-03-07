@@ -84,7 +84,8 @@ function FOSpotCard({
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
-          {route.driver && !route.driverIsOff ? formatName(route.driver.name) : `R:${route.number}`}
+          <div>R:{route.number}</div>
+          {route.driver && !route.driverIsOff && <div>{formatName(route.driver.name)}</div>}
         </div>
       ))}
     </button>
@@ -153,9 +154,7 @@ export function FOSection({
                         : 'bg-blue-100 text-blue-700 border border-blue-300'
                     }`}
                   >
-                    {route.driver && !route.driverIsOff
-                      ? formatName(route.driver.name)
-                      : `R:${route.number}`}
+                    R:{route.number}{route.driver && !route.driverIsOff ? ` ${formatName(route.driver.name)}` : ''}
                   </div>
                 ))}
               </div>
