@@ -121,7 +121,8 @@ model Spot {
   assignments          Assignment[]
   homeTrucks           Truck[]
   truckAssignments     TruckSpotAssignment[]
-  routes               Route[]
+  routes               Route[]  @relation("RouteBeltSpot")
+  pulledRoutes         Route[]  @relation("RoutePullerSpot")
 
   @@unique([beltId, number])
 }
@@ -248,7 +249,9 @@ model Route {
   number          String         @unique
   assignedArea    RouteArea
   beltSpotId      Int?
-  beltSpot        Spot?          @relation(fields: [beltSpotId], references: [id])
+  beltSpot        Spot?          @relation("RouteBeltSpot", fields: [beltSpotId], references: [id])
+  pullerBeltSpotId Int?
+  pullerBeltSpot  Spot?          @relation("RoutePullerSpot", fields: [pullerBeltSpotId], references: [id])
   facilitySpotId  Int?
   facilitySpot    FacilitySpot?  @relation(fields: [facilitySpotId], references: [id])
   loadLocation    LoadLocation?

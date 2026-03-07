@@ -207,6 +207,39 @@ router.delete('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async
   }
 });
 
+// Set puller belt spot for a route
+router.patch('/:id/puller-spot', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    const { pullerBeltSpotId } = req.body;
+
+    const route = await prisma.route.update({
+      where: { id },
+      data: { pullerBeltSpotId: pullerBeltSpotId || null },
+    });
+
+    res.json(route);
+  } catch (error) {
+    console.error('Update puller spot error:', error);
+    res.status(500).json({ error: 'Failed to update puller spot' });
+  }
+});
+
+// Get routes pulled by a specific belt spot
+router.get('/pulled-by/:spotId', authenticate, async (req, res) => {
+  try {
+    const spotId = parseInt(req.params.spotId as string);
+    const routes = await prisma.route.findMany({
+      where: { pullerBeltSpotId: spotId, isActive: true },
+      orderBy: { number: 'asc' },
+    });
+    res.json(routes);
+  } catch (error) {
+    console.error('Get pulled routes error:', error);
+    res.status(500).json({ error: 'Failed to get pulled routes' });
+  }
+});
+
 // Update route load location (HIGHEST_MANAGER only)
 router.patch('/:id/load-location', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {

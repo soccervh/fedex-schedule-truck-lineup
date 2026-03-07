@@ -12,6 +12,7 @@ interface Spot {
   number: number;
   routeOverride?: number | null;
   route?: { id: number; number: string; loadLocation?: string | null } | null;
+  pulledRoutes?: { id: number; number: string }[];
   assignment: {
     id: string;
     truckNumber: string;
@@ -77,6 +78,7 @@ export function BeltColumn({
             baseNumber={baseNumber}
             routeOverride={spot.routeOverride}
             route={spot.route}
+            pulledRoutes={spot.pulledRoutes}
             assignment={spot.assignment}
             truckAssignment={spot.truckAssignment}
             spotId={spot.id}

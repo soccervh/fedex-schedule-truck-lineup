@@ -30,6 +30,11 @@ interface SpotRoute {
   loadLocation?: string | null;
 }
 
+interface PulledRoute {
+  id: number;
+  number: string;
+}
+
 interface SpotCardCompactProps {
   spotId: number;
   spotNumber: number;
@@ -37,6 +42,7 @@ interface SpotCardCompactProps {
   baseNumber: number;
   routeOverride?: number | null;
   route?: SpotRoute | null;
+  pulledRoutes?: PulledRoute[];
   assignment: SpotAssignment | null;
   truckAssignment?: TruckAssignment | null;
   onClick: () => void;
@@ -83,6 +89,7 @@ export function SpotCardCompact({
   baseNumber,
   routeOverride,
   route,
+  pulledRoutes,
   assignment,
   truckAssignment,
   onClick,
@@ -194,6 +201,11 @@ export function SpotCardCompact({
             </div>
           )}
         </>
+      )}
+      {pulledRoutes && pulledRoutes.length > 0 && (
+        <div className="text-[10px] text-yellow-300 mt-0.5 truncate w-full">
+          Pulls: {pulledRoutes.map(r => r.number).join(', ')}
+        </div>
       )}
     </button>
   );

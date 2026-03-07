@@ -36,6 +36,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
   );
   const [routeSaved, setRouteSaved] = useState(false);
   const [areaSaved, setAreaSaved] = useState(false);
+  const [pullerSaved, setPullerSaved] = useState(false);
 
   const { data: people } = useQuery({
     queryKey: ['people'],
@@ -106,6 +107,29 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
       setAreaSaved(true);
       setTimeout(() => setAreaSaved(false), 2000);
+    },
+  });
+
+  const isPuller = spotRoutes?.[0]?.loadLocation === 'PULLER';
+
+  const { data: pulledRoutes } = useQuery({
+    queryKey: ['pulled-routes', spot.id],
+    queryFn: async () => {
+      const res = await api.get(`/routes/pulled-by/${spot.id}`);
+      return res.data;
+    },
+    enabled: isPuller,
+  });
+
+  const pullerMutation = useMutation({
+    mutationFn: async ({ routeId, pullerBeltSpotId }: { routeId: number; pullerBeltSpotId: number | null }) => {
+      return api.patch(`/routes/${routeId}/puller-spot`, { pullerBeltSpotId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pulled-routes', spot.id] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      setPullerSaved(true);
+      setTimeout(() => setPullerSaved(false), 2000);
     },
   });
 
@@ -222,6 +246,55 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
               </div>
             )}
           </div>
+
+          {/* Puller Routes Section */}
+          {isPuller && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-yellow-700 uppercase">Routes Pulled</span>
+                {pullerSaved && <span className="text-green-600 text-xs inline-flex items-center gap-0.5"><Check size={12} /> Saved</span>}
+              </div>
+              {pulledRoutes && pulledRoutes.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {pulledRoutes.map((r: any) => (
+                    <span
+                      key={r.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs font-medium"
+                    >
+                      R:{r.number}
+                      <button
+                        type="button"
+                        onClick={() => pullerMutation.mutate({ routeId: r.id, pullerBeltSpotId: null })}
+                        className="text-yellow-600 hover:text-red-600 ml-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <select
+                value=""
+                onChange={(e) => {
+                  const routeId = parseInt(e.target.value);
+                  if (routeId) {
+                    pullerMutation.mutate({ routeId, pullerBeltSpotId: spot.id });
+                  }
+                }}
+                className="w-full px-2 py-1.5 border rounded text-sm"
+                disabled={pullerMutation.isPending}
+              >
+                <option value="">Add route to pull...</option>
+                {allRoutes
+                  ?.filter((r: any) => r.isActive && r.id !== spotRoutes?.[0]?.id && !pulledRoutes?.some((pr: any) => pr.id === r.id))
+                  .map((r: any) => (
+                    <option key={r.id} value={r.id}>
+                      R:{r.number}{r.pullerBeltSpotId && r.pullerBeltSpotId !== spot.id ? ' (assigned to other puller)' : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
 
           {/* Swap Truck Button */}
           <button

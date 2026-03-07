@@ -100,6 +100,11 @@ router.get('/all/assignments', authenticate, async (req, res) => {
               select: { id: true, number: true, loadLocation: true, schedule: true },
               orderBy: { number: 'asc' },
             },
+            pulledRoutes: {
+              where: { isActive: true },
+              select: { id: true, number: true },
+              orderBy: { number: 'asc' },
+            },
           },
         },
       },
@@ -142,6 +147,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
           number: spot.number,
           routeOverride: spot.routeOverride,
           route: spot.routes[0] || null,
+          pulledRoutes: spot.pulledRoutes,
           assignment: assignment
             ? {
                 id: assignment.id,
