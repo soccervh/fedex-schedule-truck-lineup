@@ -88,8 +88,8 @@ function DocSpotCard({
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
-          <div>R:{route.number}</div>
           {route.driver && !route.driverIsOff && <div>{formatName(route.driver.name)}</div>}
+          <div>R:{route.number}</div>
         </div>
       ))}
     </button>
