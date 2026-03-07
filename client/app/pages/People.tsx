@@ -112,6 +112,8 @@ export default function People() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-areas'] });
     },
   });
 
@@ -122,6 +124,8 @@ export default function People() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-areas'] });
     },
   });
 
