@@ -14,7 +14,7 @@ FROM base AS server-build
 COPY server/package.json server/package-lock.json ./server/
 RUN cd server && npm install
 COPY server/ ./server/
-RUN cd server && npx prisma generate && npm run build
+RUN cd server && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate && npm run build
 
 # --- Production ---
 FROM base AS production
