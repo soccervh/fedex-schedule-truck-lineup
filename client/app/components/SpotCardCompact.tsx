@@ -219,7 +219,7 @@ export function SpotCardCompact({
             </div>
           )}
           {assignment.needsCoverage && (
-            <div className="text-xs font-bold text-red-700 mt-1">OPEN</div>
+            <div className="text-xs font-bold mt-1"><span className="bg-red-600 text-white px-1.5 py-0.5 rounded">OPEN</span></div>
           )}
         </>
       ) : (
