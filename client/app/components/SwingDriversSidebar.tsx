@@ -25,13 +25,13 @@ interface SwingDriversSidebarProps {
 }
 
 export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverClick }: SwingDriversSidebarProps) {
-  // Build a map of swing driver id -> assigned position
-  const driverPosition = new Map<string, string>();
+  // Build a map of swing driver id -> assigned position + route
+  const driverInfo = new Map<string, { section: string; routeNumber: string }>();
   if (routeAssignments) {
     for (const [section, routes] of Object.entries(routeAssignments)) {
       for (const route of routes) {
         if (route.driver && !route.driverIsOff && route.driver.role === 'SWING') {
-          driverPosition.set(route.driver.id, section);
+          driverInfo.set(route.driver.id, { section, routeNumber: route.number });
         }
       }
     }
@@ -39,8 +39,8 @@ export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverCl
 
   // Sort: unassigned first, assigned to bottom
   const sorted = [...swingDrivers].sort((a, b) => {
-    const aAssigned = driverPosition.has(a.id) ? 1 : 0;
-    const bAssigned = driverPosition.has(b.id) ? 1 : 0;
+    const aAssigned = driverInfo.has(a.id) ? 1 : 0;
+    const bAssigned = driverInfo.has(b.id) ? 1 : 0;
     if (aAssigned !== bAssigned) return aAssigned - bAssigned;
     return a.name.localeCompare(b.name);
   });
@@ -56,16 +56,16 @@ export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverCl
           <div className="p-3 text-sm text-gray-500">No swing drivers</div>
         ) : (
           sorted.map((driver) => {
-            const position = driverPosition.get(driver.id);
+            const info = driverInfo.get(driver.id);
             return (
               <button
                 key={driver.id}
                 onClick={() => onDriverClick?.(driver)}
-                className={`w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors ${position ? 'opacity-60' : ''}`}
+                className={`w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors ${info ? 'opacity-60' : ''}`}
               >
                 <div className="font-medium text-gray-900">{driver.name}</div>
-                {position && (
-                  <div className="text-xs text-gray-500 mt-0.5">{position}</div>
+                {info && (
+                  <div className="text-xs text-gray-500 mt-0.5">{info.section} - R:{info.routeNumber}</div>
                 )}
               </button>
             );
