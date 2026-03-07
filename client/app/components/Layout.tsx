@@ -3,8 +3,9 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../lib/api';
-import { Home } from 'lucide-react';
+import { Home, Sun, Moon } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ interface LayoutProps {
 
 export function AppLayout({ children }: LayoutProps) {
   const { user, logout, isManager, isOpLead, isTruckMover } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -38,15 +40,15 @@ export function AppLayout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center py-3">
             <div className="flex items-center gap-2 shrink-0">
-              <Link to="/" className="text-gray-600 hover:text-blue-600">
+              <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-blue-600">
                 <Home size={22} />
               </Link>
-              <h1 className="text-lg font-bold text-gray-900">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
                 FedEx
               </h1>
             </div>
@@ -61,8 +63,8 @@ export function AppLayout({ children }: LayoutProps) {
                     to={item.path}
                     className={`relative text-sm font-medium ${
                       location.pathname === item.path
-                        ? 'text-blue-600'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {item.label}
@@ -73,11 +75,18 @@ export function AppLayout({ children }: LayoutProps) {
                     ) : null}
                   </Link>
                 ))}
-              <div className="flex items-center gap-4 ml-4 pl-4 border-l">
-                <span className="text-sm text-gray-600">{user?.name}</span>
+              <div className="flex items-center gap-4 ml-4 pl-4 border-l dark:border-gray-600">
+                <button
+                  onClick={toggleTheme}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  aria-label="Toggle dark mode"
+                >
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{user?.name}</span>
                 <button
                   onClick={logout}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   Logout
                 </button>
@@ -102,7 +111,7 @@ export function AppLayout({ children }: LayoutProps) {
 
           {/* Mobile menu */}
           {menuOpen && (
-            <div className="md:hidden border-t pb-3">
+            <div className="md:hidden border-t dark:border-gray-600 pb-3">
               {navItems
                 .filter((item) => item.show)
                 .map((item) => (
@@ -112,8 +121,8 @@ export function AppLayout({ children }: LayoutProps) {
                     onClick={() => setMenuOpen(false)}
                     className={`block py-2 px-2 text-sm font-medium ${
                       location.pathname === item.path
-                        ? 'text-blue-600'
-                        : 'text-gray-600'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     {item.label}
@@ -124,11 +133,17 @@ export function AppLayout({ children }: LayoutProps) {
                     ) : null}
                   </Link>
                 ))}
-              <div className="flex items-center justify-between px-2 pt-2 mt-2 border-t">
-                <span className="text-sm text-gray-600">{user?.name}</span>
+              <div className="flex items-center justify-between px-2 pt-2 mt-2 border-t dark:border-gray-600">
+                <button
+                  onClick={toggleTheme}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{user?.name}</span>
                 <button
                   onClick={logout}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   Logout
                 </button>
@@ -137,7 +152,7 @@ export function AppLayout({ children }: LayoutProps) {
           )}
         </div>
       </header>
-      <main className="max-w-7xl mx-auto py-4 px-3 md:py-6 md:px-4">{children}</main>
+      <main className="max-w-7xl mx-auto py-4 px-3 md:py-6 md:px-4 text-gray-900 dark:text-gray-100">{children}</main>
     </div>
   );
 }

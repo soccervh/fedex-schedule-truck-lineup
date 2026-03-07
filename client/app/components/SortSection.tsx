@@ -82,7 +82,7 @@ function SortSpotCard({
           )}
         </>
       ) : (
-        <div className="text-gray-400 text-xs">—</div>
+        <div className="text-gray-400 dark:text-gray-500 text-xs">—</div>
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
@@ -113,7 +113,7 @@ function SortSideColumn({
 
   return (
     <div>
-      <div className="text-xs text-gray-500 text-center mb-1">{label}</div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">{label}</div>
       <div className="space-y-1">
         {/* Label Facers row */}
         <div className="flex gap-1 justify-center">
@@ -165,10 +165,10 @@ export function SortSection({
   }
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-lg overflow-hidden shrink-0">
+    <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg overflow-hidden shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-purple-800 hover:bg-purple-100 transition-colors text-sm"
+        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-purple-800 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         SORT ({totalX}/{totalY})
@@ -194,8 +194,8 @@ export function SortSection({
 
           {/* Unassigned route list */}
           {routes.filter(r => !r.facilitySpotId).length > 0 && (
-            <div className="border-t border-purple-200 pt-2">
-              <div className="text-xs text-purple-600 font-medium mb-1 text-center">Routes</div>
+            <div className="border-t border-purple-200 dark:border-purple-700 pt-2">
+              <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1 text-center">Routes</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {routes.filter(r => !r.facilitySpotId).map(route => (
                   <div
@@ -203,7 +203,7 @@ export function SortSection({
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       route.driver && !route.driverIsOff
                         ? route.driver.role === 'SWING' ? 'bg-swing text-white' : 'bg-purple-500 text-white'
-                        : 'bg-purple-100 text-purple-700 border border-purple-300'
+                        : 'bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
                     }`}
                   >
                     R:{route.number}{route.driver && !route.driverIsOff ? ` ${formatName(route.driver.name)}` : ''}

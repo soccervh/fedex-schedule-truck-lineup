@@ -43,7 +43,7 @@ export function BeltDetailView({
       <div className="flex items-center gap-4 mb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <span className="text-xl">←</span>
           <span>Back to Facility</span>
@@ -51,7 +51,7 @@ export function BeltDetailView({
         <h2 className="text-xl font-semibold">{beltName}</h2>
       </div>
 
-      <div className="text-center text-sm text-gray-500 mb-2">WEST</div>
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">WEST</div>
 
       <div className="flex-1 overflow-y-auto space-y-2 px-2">
         {sortedSpots.map((spot) => (
@@ -68,7 +68,7 @@ export function BeltDetailView({
         ))}
       </div>
 
-      <div className="text-center text-sm text-gray-500 mt-2">EAST</div>
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">EAST</div>
     </div>
   );
 }

@@ -59,14 +59,14 @@ export function SpotCardDetailed({
   const spotName = formatSpotName(beltLetter, spotNumber);
 
   const getBackgroundClass = () => {
-    if (!assignment) return 'bg-gray-50 border-dashed';
+    if (!assignment) return 'bg-gray-50 dark:bg-gray-700 border-dashed';
     if (assignment.needsCoverage) return 'bg-red-50 border-red-400 border-2';
     if (assignment.user.role === 'SWING') return 'bg-swing/10 border-swing';
-    return 'bg-white border-gray-200';
+    return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600';
   };
 
   const getAccentClass = () => {
-    if (!assignment) return 'bg-gray-200';
+    if (!assignment) return 'bg-gray-200 dark:bg-gray-600';
     if (assignment.needsCoverage) return 'bg-red-500';
     if (assignment.user.role === 'SWING') return 'bg-swing';
     return loadLocationColors[route?.loadLocation || 'UNASSIGNED'] || 'bg-gray-400';
@@ -84,7 +84,7 @@ export function SpotCardDetailed({
 
       <div className="flex-1">
         <div className="flex justify-between items-start">
-          <div className="font-semibold text-gray-900">
+          <div className="font-semibold text-gray-900 dark:text-white">
             {spotName} {routeDisplay}
           </div>
           {assignment?.needsCoverage && (
@@ -96,7 +96,7 @@ export function SpotCardDetailed({
 
         {assignment ? (
           <>
-            <div className={`text-lg ${assignment.needsCoverage ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+            <div className={`text-lg ${assignment.needsCoverage ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
               {assignment.user.name}
               {assignment.needsCoverage && timeOffInfo && (
                 <span className="text-sm text-red-600 ml-2 no-underline inline">
@@ -104,8 +104,8 @@ export function SpotCardDetailed({
                 </span>
               )}
             </div>
-            <div className="text-sm text-gray-600">T: {assignment.truckNumber}</div>
-            <div className="flex gap-3 mt-2 text-xs text-gray-500">
+            <div className="text-sm text-gray-600 dark:text-gray-400">T: {assignment.truckNumber}</div>
+            <div className="flex gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
               <span>{route?.loadLocation ? `Area: ${route.loadLocation}` : ''}</span>
               {assignment.isOverride ? (
                 <span className="text-amber-600">✎ Override</span>
@@ -118,7 +118,7 @@ export function SpotCardDetailed({
             </div>
           </>
         ) : (
-          <div className="text-gray-400">Unassigned</div>
+          <div className="text-gray-400 dark:text-gray-500">Unassigned</div>
         )}
       </div>
     </button>

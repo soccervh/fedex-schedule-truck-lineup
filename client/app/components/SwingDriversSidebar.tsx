@@ -46,14 +46,14 @@ export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverCl
   });
 
   return (
-    <div className="w-48 bg-white border-l border-gray-200 flex flex-col">
-      <div className="p-3 border-b border-gray-200 bg-swing">
+    <div className="w-48 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-600 flex flex-col">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-600 bg-swing">
         <h3 className="font-semibold text-white">SWING DRIVERS</h3>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {sorted.length === 0 ? (
-          <div className="p-3 text-sm text-gray-500">No swing drivers</div>
+          <div className="p-3 text-sm text-gray-500 dark:text-gray-400">No swing drivers</div>
         ) : (
           sorted.map((driver) => {
             const info = driverInfo.get(driver.id);
@@ -61,11 +61,11 @@ export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverCl
               <button
                 key={driver.id}
                 onClick={() => onDriverClick?.(driver)}
-                className={`w-full p-3 text-left border-b border-gray-100 hover:bg-purple-50 transition-colors ${info ? 'opacity-60' : ''}`}
+                className={`w-full p-3 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-purple-50 transition-colors ${info ? 'opacity-60' : ''}`}
               >
-                <div className="font-medium text-gray-900">{driver.name}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{driver.name}</div>
                 {info && (
-                  <div className="text-xs text-gray-500 mt-0.5">{info.section} - R:{info.routeNumber}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{info.section} - R:{info.routeNumber}</div>
                 )}
               </button>
             );
@@ -73,8 +73,8 @@ export function SwingDriversSidebar({ swingDrivers, routeAssignments, onDriverCl
         )}
       </div>
 
-      <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="p-3 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {swingDrivers.length} driver{swingDrivers.length !== 1 ? 's' : ''}
         </span>
       </div>

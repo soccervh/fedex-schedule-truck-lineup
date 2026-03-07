@@ -170,7 +170,7 @@ export function SpotCardCompact({
   const leftStripe = `border-l-4 ${loadLocationLeftStripe[colorKey] || 'border-l-gray-300'}`;
 
   const getBackgroundClass = () => {
-    if (!assignment) return `bg-gray-50 border border-gray-300 ${leftStripe}`;
+    if (!assignment) return `bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 ${leftStripe}`;
     if (assignment.user.role === 'SWING') return `bg-swing text-white border border-gray-600 ${leftStripe}`;
     return `${loadLocationColors[colorKey] || 'bg-gray-400'} text-white border border-gray-600 ${leftStripe}`;
   };
@@ -223,9 +223,9 @@ export function SpotCardCompact({
         </>
       ) : (
         <>
-          <div className="text-gray-400 text-sm">—</div>
+          <div className="text-gray-400 dark:text-gray-500 text-sm">—</div>
           {truckNumber && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               T: {truckNumber}
               {truckAssignment?.truck.truckType && truckAssignment.truck.truckType !== 'UNKNOWN' && (
                 <span className="ml-1">({truckTypeLabel(truckAssignment.truck.truckType)})</span>

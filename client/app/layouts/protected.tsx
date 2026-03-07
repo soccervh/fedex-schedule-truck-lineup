@@ -7,8 +7,8 @@ export default function ProtectedLayout() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center dark:bg-gray-800">
+        <p className="text-gray-500 dark:text-gray-400">Loading...</p>
       </div>
     );
   }

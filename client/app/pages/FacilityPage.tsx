@@ -103,16 +103,16 @@ export default function FacilityPage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+            className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
           />
         </div>
 
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
             Loading...
           </div>
         ) : beltsData ? (
-          <div className="flex-1 overflow-hidden bg-white rounded-lg shadow p-4">
+          <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             {detailBelt ? (
               <BeltDetailView
                 beltName={detailBelt.name}
@@ -136,7 +136,7 @@ export default function FacilityPage() {
             ) : null}
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
             No data available
           </div>
         )}

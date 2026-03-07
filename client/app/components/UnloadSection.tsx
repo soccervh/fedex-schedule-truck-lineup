@@ -82,7 +82,7 @@ function UnloadSpotCard({
           )}
         </>
       ) : (
-        <div className="text-gray-400 text-xs">—</div>
+        <div className="text-gray-400 dark:text-gray-500 text-xs">—</div>
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
@@ -121,10 +121,10 @@ export function UnloadSection({
   }
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg overflow-hidden shrink-0">
+    <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg overflow-hidden shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-green-800 hover:bg-green-100 transition-colors text-sm"
+        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-green-800 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         UNLOAD ({totalX}/{totalY})
@@ -134,7 +134,7 @@ export function UnloadSection({
           <div className="flex justify-between">
             {/* D/C Side */}
             <div>
-              <div className="text-xs text-gray-500 text-center mb-1">D/C Side</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">D/C Side</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {dcSpots.map((spot) => (
                   <UnloadSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -143,7 +143,7 @@ export function UnloadSection({
             </div>
             {/* B/A Side */}
             <div>
-              <div className="text-xs text-gray-500 text-center mb-1">B/A Side</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">B/A Side</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {baSpots.map((spot) => (
                   <UnloadSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -154,8 +154,8 @@ export function UnloadSection({
 
           {/* Unassigned route list */}
           {routes.filter(r => !r.facilitySpotId).length > 0 && (
-            <div className="border-t border-green-200 pt-2">
-              <div className="text-xs text-green-600 font-medium mb-1 text-center">Routes</div>
+            <div className="border-t border-green-200 dark:border-green-700 pt-2">
+              <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1 text-center">Routes</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {routes.filter(r => !r.facilitySpotId).map(route => (
                   <div
@@ -163,7 +163,7 @@ export function UnloadSection({
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       route.driver && !route.driverIsOff
                         ? route.driver.role === 'SWING' ? 'bg-swing text-white' : 'bg-green-500 text-white'
-                        : 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-600'
                     }`}
                   >
                     R:{route.number}{route.driver && !route.driverIsOff ? ` ${formatName(route.driver.name)}` : ''}

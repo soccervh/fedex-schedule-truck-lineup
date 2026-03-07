@@ -8,6 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -36,9 +37,11 @@ export default function Root() {
   return (
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
-        <AuthProvider>
-          <Outlet />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Outlet />
+          </AuthProvider>
+        </ThemeProvider>
       </NuqsAdapter>
     </QueryClientProvider>
   );

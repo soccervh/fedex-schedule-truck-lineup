@@ -145,12 +145,12 @@ export function FacilityView({
       />
 
       {/* BELTS Section */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shrink-0">
-        <div className="text-center font-semibold text-gray-800 mb-3">BELTS</div>
+      <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shrink-0">
+        <div className="text-center font-semibold text-gray-800 dark:text-gray-100 mb-3">BELTS</div>
 
         {/* Desktop: show all belts side-by-side */}
         <div className="hidden md:block">
-          <div className="text-center text-sm text-gray-500 mb-2">WEST</div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">WEST</div>
           <div className="flex gap-2 justify-center overflow-x-auto pb-4">
             {leftBelts.map((belt) => (
               <BeltColumn
@@ -179,21 +179,21 @@ export function FacilityView({
               />
             ))}
           </div>
-          <div className="text-center text-sm text-gray-500 mt-2">EAST</div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">EAST</div>
         </div>
 
         {/* Mobile: belt tabs */}
         <div className="md:hidden">
           {/* Tab bar */}
-          <div className="flex bg-gray-200 rounded-lg p-1 mb-3">
+          <div className="flex bg-gray-200 dark:bg-gray-600 rounded-lg p-1 mb-3">
             {allBelts.map((belt, idx) => (
               <button
                 key={belt.id}
                 onClick={() => setActiveBeltTab(idx)}
                 className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors ${
                   activeBeltTab === idx
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-600'
+                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow'
+                    : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
                 {belt.letter} Belt

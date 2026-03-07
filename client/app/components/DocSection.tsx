@@ -84,7 +84,7 @@ function DocSpotCard({
           )}
         </>
       ) : (
-        <div className="text-gray-400 text-xs">—</div>
+        <div className="text-gray-400 dark:text-gray-500 text-xs">—</div>
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
@@ -125,10 +125,10 @@ export function DocSection({
   }
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-lg overflow-hidden shrink-0">
+    <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg overflow-hidden shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-orange-800 hover:bg-orange-100 transition-colors text-sm"
+        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-orange-800 dark:text-orange-200 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         DOC ({totalX}/{totalY})
@@ -137,7 +137,7 @@ export function DocSection({
         <div className="px-3 pb-3 space-y-2">
           {/* Row 1: Secondary S1-S8 */}
           <div>
-            <div className="text-xs text-gray-500 text-center mb-1">Secondary</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">Secondary</div>
             <div className="flex flex-wrap gap-1 justify-center">
               {secondarySpots.map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -147,7 +147,7 @@ export function DocSection({
 
           {/* Row 2: QB1, QB2 */}
           <div>
-            <div className="text-xs text-gray-500 text-center mb-1">Quarterback</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">Quarterback</div>
             <div className="flex flex-wrap gap-1 justify-center">
               {quarterbackUpperSpots.map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -157,7 +157,7 @@ export function DocSection({
 
           {/* Row 3: FS1-FS8 */}
           <div>
-            <div className="text-xs text-gray-500 text-center mb-1">Fine Sort</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">Fine Sort</div>
             <div className="flex flex-wrap gap-1 justify-center">
               {fineSortSpots.map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -167,7 +167,7 @@ export function DocSection({
 
           {/* Row 4: QB3, Ramp1, Ramp2 */}
           <div>
-            <div className="text-xs text-gray-500 text-center mb-1">QB + Ramps</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">QB + Ramps</div>
             <div className="flex flex-wrap gap-1 justify-center">
               {quarterbackLowerSpots.map((spot) => (
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
@@ -180,8 +180,8 @@ export function DocSection({
 
           {/* Unassigned route list */}
           {routes.filter(r => !r.facilitySpotId).length > 0 && (
-            <div className="border-t border-orange-200 pt-2">
-              <div className="text-xs text-orange-600 font-medium mb-1 text-center">Routes</div>
+            <div className="border-t border-orange-200 dark:border-orange-700 pt-2">
+              <div className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1 text-center">Routes</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {routes.filter(r => !r.facilitySpotId).map(route => (
                   <div
@@ -189,7 +189,7 @@ export function DocSection({
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       route.driver && !route.driverIsOff
                         ? route.driver.role === 'SWING' ? 'bg-swing text-white' : 'bg-orange-500 text-white'
-                        : 'bg-orange-100 text-orange-700 border border-orange-300'
+                        : 'bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-200 border border-orange-300 dark:border-orange-600'
                     }`}
                   >
                     R:{route.number}{route.driver && !route.driverIsOff ? ` ${formatName(route.driver.name)}` : ''}

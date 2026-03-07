@@ -80,7 +80,7 @@ function FOSpotCard({
           )}
         </>
       ) : (
-        <div className="text-gray-400 text-xs">—</div>
+        <div className="text-gray-400 dark:text-gray-500 text-xs">—</div>
       )}
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
@@ -118,10 +118,10 @@ export function FOSection({
   }
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden shrink-0">
+    <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg overflow-hidden shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-blue-800 hover:bg-blue-100 transition-colors text-sm"
+        className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         FO ({totalX}/{totalY})
@@ -142,8 +142,8 @@ export function FOSection({
 
           {/* Unassigned route list */}
           {routes.filter(r => !r.facilitySpotId).length > 0 && (
-            <div className="border-t border-blue-200 pt-2">
-              <div className="text-xs text-blue-600 font-medium mb-1 text-center">Routes</div>
+            <div className="border-t border-blue-200 dark:border-blue-700 pt-2">
+              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1 text-center">Routes</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {routes.filter(r => !r.facilitySpotId).map(route => (
                   <div
@@ -151,7 +151,7 @@ export function FOSection({
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       route.driver && !route.driverIsOff
                         ? route.driver.role === 'SWING' ? 'bg-swing text-white' : 'bg-blue-500 text-white'
-                        : 'bg-blue-100 text-blue-700 border border-blue-300'
+                        : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-600'
                     }`}
                   >
                     R:{route.number}{route.driver && !route.driverIsOff ? ` ${formatName(route.driver.name)}` : ''}

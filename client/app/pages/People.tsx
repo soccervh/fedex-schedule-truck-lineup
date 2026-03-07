@@ -209,18 +209,18 @@ export default function People() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search..."
-          className="px-2 py-1.5 border rounded-md text-sm w-32 sm:w-40"
+          className="px-2 py-1.5 border rounded-md text-sm w-32 sm:w-40 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
         />
         <input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-2 py-1.5 border rounded-md text-sm"
+          className="px-2 py-1.5 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="px-2 py-1.5 border rounded-md text-sm"
+          className="px-2 py-1.5 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
         >
           <option value="">All Roles</option>
           <option value="DRIVER">Driver</option>
@@ -232,7 +232,7 @@ export default function People() {
         <select
           value={accessLevelFilter}
           onChange={(e) => setAccessLevelFilter(e.target.value)}
-          className="hidden sm:block px-2 py-1.5 border rounded-md text-sm"
+          className="hidden sm:block px-2 py-1.5 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
         >
           <option value="">All Access Levels</option>
           <option value="HIGHEST_MANAGER">Highest Manager</option>
@@ -243,35 +243,35 @@ export default function People() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+          <table className="w-full divide-y divide-gray-200 dark:divide-gray-600">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Name
                 </th>
-                <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Email
                 </th>
-                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Role
                 </th>
-                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Route
                 </th>
-                <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Access Level
                 </th>
                 {isHighestManager && (
-                  <th className="px-2 sm:px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Actions
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
               {filteredPeople?.map((person: any) => (
                 <tr key={person.id}>
                   <td className="px-3 py-3 whitespace-nowrap font-medium text-sm">
@@ -283,7 +283,7 @@ export default function People() {
                       person.name
                     )}
                   </td>
-                  <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap text-gray-500 text-sm">
+                  <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400 text-sm">
                     {person.email}
                   </td>
                   <td className="px-2 sm:px-3 py-3 whitespace-nowrap">
@@ -303,7 +303,7 @@ export default function People() {
                         <select
                           value={driverRoutes?.[person.id]?.routeId ?? ''}
                           onChange={(e) => handleRouteChange(person, e.target.value)}
-                          className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white max-w-[90px] sm:max-w-none"
+                          className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-white max-w-[90px] sm:max-w-none"
                           disabled={assignRouteMutation.isPending || unassignRouteMutation.isPending}
                         >
                           <option value="">— None —</option>
@@ -321,14 +321,14 @@ export default function People() {
                             })}
                         </select>
                       ) : (
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
                           {driverRoutes?.[person.id]?.routeNumber
                             ? `R:${driverRoutes[person.id].routeNumber}`
                             : '—'}
                         </span>
                       )
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-400 dark:text-gray-500">—</span>
                     )}
                   </td>
                   <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
@@ -366,46 +366,46 @@ export default function People() {
         <div className="space-y-4">
           <h2 className="text-xl font-bold">Pending Invites</h2>
           {invitesLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading invites...</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading invites...</div>
           ) : pendingInvites?.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg shadow">
               No pending invites
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Access Level
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Sent
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                   {pendingInvites?.map((invite: any) => (
                     <tr key={invite.id}>
                       <td className="px-6 py-4 whitespace-nowrap font-medium">
                         {invite.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {invite.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -426,7 +426,7 @@ export default function People() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 text-sm">
                         {new Date(invite.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

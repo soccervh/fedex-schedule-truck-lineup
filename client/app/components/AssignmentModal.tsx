@@ -172,25 +172,25 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
+          <h2 className="text-lg font-semibold dark:text-white">
             {spotLabel}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-4 space-y-4">
           {/* Route & Area Section - saves automatically */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+          <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 uppercase">Route & Area</span>
-              <span className="text-xs text-gray-400">Changes save automatically</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Route & Area</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">Changes save automatically</span>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Route
                 {routeSaved && <span className="ml-2 text-green-600 text-xs inline-flex items-center gap-0.5"><Check size={12} /> Saved</span>}
               </label>
@@ -207,7 +207,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                   }
                   assignRouteMutation.mutate({ routeId, spotId: spot.id });
                 }}
-                className="w-full px-2 py-1.5 border rounded text-sm"
+                className="w-full px-2 py-1.5 border rounded text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                 disabled={assignRouteMutation.isPending}
               >
                 <option value="">No route assigned</option>
@@ -220,7 +220,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             </div>
             {spotRoutes?.[0] && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Assign Area
                   {areaSaved && <span className="ml-2 text-green-600 text-xs inline-flex items-center gap-0.5"><Check size={12} /> Saved</span>}
                 </label>
@@ -230,7 +230,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                     routeId: spotRoutes[0].id,
                     loadLocation: e.target.value || null,
                   })}
-                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  className="w-full px-2 py-1.5 border rounded text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                   disabled={loadLocationMutation.isPending}
                 >
                   <option value="">No Area</option>
@@ -279,7 +279,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                     pullerMutation.mutate({ routeId, pullerBeltSpotId: spot.id });
                   }
                 }}
-                className="w-full px-2 py-1.5 border rounded text-sm"
+                className="w-full px-2 py-1.5 border rounded text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                 disabled={pullerMutation.isPending}
               >
                 <option value="">Add route to pull...</option>
@@ -316,8 +316,8 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
           </button>
 
           {/* Person Assignment Section - optional */}
-          <div className="border border-gray-200 rounded-lg p-3 space-y-3">
-            <span className="text-xs font-semibold text-gray-500 uppercase">Person Assignment (Optional)</span>
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Person Assignment (Optional)</span>
 
             {spot.assignment?.needsCoverage && (
               <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
@@ -328,13 +328,13 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {spot.assignment?.needsCoverage ? 'Swing Driver' : 'Assign Person'}
                 </label>
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                 >
                   <option value="">No person assigned</option>
                   {spot.assignment?.needsCoverage ? (
@@ -381,7 +381,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
           <button
             type="button"
             onClick={onClose}
-            className="w-full bg-gray-100 text-gray-700 py-2 rounded-md hover:bg-gray-200 font-medium"
+            className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
           >
             Done
           </button>

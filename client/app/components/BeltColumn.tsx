@@ -69,7 +69,7 @@ export function BeltColumn({
       <div className="bg-gray-800 text-white text-center py-2 font-semibold rounded-t">
         {beltName}
       </div>
-      <div className="flex-1 bg-gray-50 border border-t-0 border-gray-200 rounded-b p-1 space-y-1 overflow-y-auto">
+      <div className="flex-1 bg-gray-50 dark:bg-gray-700 border border-t-0 border-gray-200 dark:border-gray-600 rounded-b p-1 space-y-1 overflow-y-auto">
         {sortedSpots.map((spot) => (
           <SpotCardCompact
             key={spot.id}

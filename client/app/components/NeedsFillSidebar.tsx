@@ -48,8 +48,8 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
     : coverageNeeds;
 
   return (
-    <div className="w-48 bg-white border-l border-gray-200 flex flex-col">
-      <div className="p-3 border-b border-gray-200 bg-red-50">
+    <div className="w-48 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-600 flex flex-col">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-600 bg-red-50">
         <h3 className="font-semibold text-red-800">NEEDS FILL</h3>
         <div className="flex gap-1 mt-2">
           {BELT_LETTERS.map((letter) => (
@@ -70,7 +70,7 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
 
       <div className="flex-1 overflow-y-auto">
         {filteredNeeds.length === 0 ? (
-          <div className="p-3 text-sm text-gray-500">All spots filled</div>
+          <div className="p-3 text-sm text-gray-500 dark:text-gray-400">All spots filled</div>
         ) : (
           filteredNeeds.map((need) => {
             const spotName = formatSpotName(need.spot.belt.letter, need.spot.number);
@@ -83,15 +83,15 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
               <button
                 key={need.spot.id}
                 onClick={() => onSpotClick(need.spot.id, need.spot.belt.id)}
-                className="w-full p-3 text-left border-b border-gray-100 hover:bg-red-50 transition-colors"
+                className="w-full p-3 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-red-50 transition-colors"
               >
-                <div className="font-medium text-gray-900">
+                <div className="font-medium text-gray-900 dark:text-white">
                   {spotName} {routeDisplay}
                 </div>
                 {areaDisplay && (
                   <div className="text-xs text-blue-600 font-medium">{areaDisplay}</div>
                 )}
-                <div className="text-sm text-gray-600 truncate">
+                <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
                   {need.reason === 'unassigned' ? '(No one assigned)' : `(${need.user.name} off)`}
                 </div>
               </button>
@@ -100,8 +100,8 @@ export function NeedsFillSidebar({ coverageNeeds, onSpotClick }: NeedsFillSideba
         )}
       </div>
 
-      <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="p-3 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {filteredNeeds.length}{activeBelt ? `/${coverageNeeds.length}` : ''} spot{filteredNeeds.length !== 1 ? 's' : ''} open
         </span>
       </div>
