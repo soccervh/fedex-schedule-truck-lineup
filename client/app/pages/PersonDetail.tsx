@@ -64,7 +64,6 @@ export default function PersonDetail() {
       email: person.email,
       phone: person.phone || '',
       role: person.role,
-      homeArea: person.homeArea,
       workSchedule: person.workSchedule,
       accessLevel: person.accessLevel || 'EMPLOYEE',
       managerId: person.managerId || '',
@@ -216,21 +215,6 @@ export default function PersonDetail() {
                   <option value="MANAGER">Manager</option>
                   <option value="CSA">CSA</option>
                   <option value="HANDLER">Handler</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Home Area</label>
-                <select
-                  value={infoForm.homeArea}
-                  onChange={(e) => setInfoForm({ ...infoForm, homeArea: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  disabled={!isManager}
-                >
-                  <option value="FO">FO</option>
-                  <option value="DOC">DOC</option>
-                  <option value="UNLOAD">Unload</option>
-                  <option value="PULLER">Puller</option>
-                  <option value="UNASSIGNED">Unassigned</option>
                 </select>
               </div>
               <div>

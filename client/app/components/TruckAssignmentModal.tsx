@@ -3,8 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { X, Truck, ArrowRight, AlertTriangle, Trash2, Pencil, Ban } from 'lucide-react';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface TruckData {
   id: number;
   number: string;
@@ -22,7 +20,6 @@ interface BeltSpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage: boolean;

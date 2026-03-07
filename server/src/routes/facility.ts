@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireAccessLevel } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { getAllowedSchedules } from './routes';
 
 const router = Router();
 
@@ -27,7 +28,6 @@ router.get('/areas', authenticate, async (req, res) => {
                   select: {
                     id: true,
                     name: true,
-                    homeArea: true,
                     role: true,
                   },
                 },
@@ -69,7 +69,6 @@ router.get('/areas', authenticate, async (req, res) => {
           user: {
             id: string;
             name: string;
-            homeArea: string;
             role: string;
           };
           needsCoverage: boolean;
@@ -139,7 +138,6 @@ router.post('/assignments', authenticate, requireAccessLevel('OP_LEAD'), async (
           select: {
             id: true,
             name: true,
-            homeArea: true,
             role: true,
           },
         },
@@ -166,6 +164,175 @@ router.delete('/assignments/:assignmentId', authenticate, requireAccessLevel('OP
   } catch (error) {
     console.error('Delete facility assignment error:', error);
     res.status(500).json({ error: 'Failed to delete facility assignment' });
+  }
+});
+
+// Get routes assigned to UNLOAD/DOCK areas with driver info for a given date
+router.get('/route-assignments', authenticate, async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter required' });
+    }
+
+    const targetDate = new Date(date as string);
+    const dayOfWeek = targetDate.getUTCDay();
+    const allowedSchedules = getAllowedSchedules(dayOfWeek);
+
+    if (allowedSchedules === null) {
+      return res.json({ FO: [], DOC: [], UNLOAD: [], SORT: [] });
+    }
+
+    const routes = await prisma.route.findMany({
+      where: {
+        isActive: true,
+        loadLocation: { not: null },
+        schedule: { in: allowedSchedules },
+      },
+      include: {
+        facilitySpot: {
+          include: {
+            area: true,
+          },
+        },
+        beltSpot: true,
+      },
+      orderBy: { number: 'asc' },
+    });
+
+
+    // For routes with a beltSpotId, find the assignment on that belt spot for this date to get the driver
+    const beltSpotIds = routes.filter(r => r.beltSpotId).map(r => r.beltSpotId!);
+    const beltAssignments = beltSpotIds.length > 0
+      ? await prisma.assignment.findMany({
+          where: {
+            spotId: { in: beltSpotIds },
+            date: targetDate,
+          },
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        })
+      : [];
+
+    const beltAssignmentBySpot = new Map(
+      beltAssignments.map(a => [a.spotId, a])
+    );
+
+    // Check time-off for drivers
+    const driverUserIds = beltAssignments.map(a => a.userId);
+    const timeOffs = driverUserIds.length > 0
+      ? await prisma.timeOff.findMany({
+          where: {
+            userId: { in: driverUserIds },
+            date: targetDate,
+            status: 'APPROVED',
+          },
+        })
+      : [];
+    const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
+
+    // Map loadLocation to section
+    const SORT_LOCATIONS = new Set(['LABEL_FACER', 'SCANNER', 'SPLITTER']);
+    function getSection(loadLocation: string): string {
+      if (loadLocation === 'FO') return 'FO';
+      if (loadLocation === 'DOC') return 'DOC';
+      if (loadLocation === 'UNLOAD') return 'UNLOAD';
+      if (SORT_LOCATIONS.has(loadLocation)) return 'SORT';
+      return 'SORT'; // default fallback
+    }
+
+    const result: Record<string, any[]> = { FO: [], DOC: [], UNLOAD: [], SORT: [] };
+
+    for (const route of routes) {
+      const beltAssignment = route.beltSpotId
+        ? beltAssignmentBySpot.get(route.beltSpotId)
+        : null;
+
+      const driver = beltAssignment
+        ? { id: beltAssignment.user.id, name: beltAssignment.user.name }
+        : null;
+
+      const driverIsOff = beltAssignment
+        ? timeOffUserIds.has(beltAssignment.userId)
+        : false;
+
+      const section = getSection(route.loadLocation!);
+      result[section].push({
+        id: route.id,
+        number: route.number,
+        facilitySpotId: route.facilitySpotId,
+        driver,
+        driverIsOff,
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get route assignments error:', error);
+    res.status(500).json({ error: 'Failed to get route assignments' });
+  }
+});
+
+// Assign a route to a facility spot
+router.post('/assign-route-spot', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
+  try {
+    const { routeId, facilitySpotId } = req.body;
+
+    if (!routeId) {
+      return res.status(400).json({ error: 'routeId is required' });
+    }
+
+    const route = await prisma.route.findUnique({ where: { id: routeId } });
+    if (!route) {
+      return res.status(404).json({ error: 'Route not found' });
+    }
+    if (!route.loadLocation) {
+      return res.status(400).json({ error: 'Route must have a loadLocation' });
+    }
+
+    // Map loadLocation to expected area name
+    const SORT_LOCATIONS = new Set(['LABEL_FACER', 'SCANNER', 'SPLITTER']);
+    function loadLocationToArea(ll: string): string {
+      if (ll === 'FO') return 'FO';
+      if (ll === 'DOC') return 'DOC';
+      if (ll === 'UNLOAD') return 'UNLOAD';
+      if (SORT_LOCATIONS.has(ll)) return 'SORT';
+      return 'SORT';
+    }
+
+    if (facilitySpotId !== null && facilitySpotId !== undefined) {
+      // Validate the facility spot belongs to the matching area
+      const spot = await prisma.facilitySpot.findUnique({
+        where: { id: facilitySpotId },
+        include: { area: true },
+      });
+      if (!spot) {
+        return res.status(404).json({ error: 'Facility spot not found' });
+      }
+
+      const expectedArea = loadLocationToArea(route.loadLocation);
+      const areaMatch = spot.area.name === expectedArea;
+      if (!areaMatch) {
+        return res.status(400).json({ error: 'Facility spot area does not match route loadLocation' });
+      }
+
+      // Clear any other route pointing to this facility spot
+      await prisma.route.updateMany({
+        where: { facilitySpotId, id: { not: routeId } },
+        data: { facilitySpotId: null },
+      });
+    }
+
+    const updated = await prisma.route.update({
+      where: { id: routeId },
+      data: { facilitySpotId: facilitySpotId ?? null },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Assign route spot error:', error);
+    res.status(500).json({ error: 'Failed to assign route to facility spot' });
   }
 });
 

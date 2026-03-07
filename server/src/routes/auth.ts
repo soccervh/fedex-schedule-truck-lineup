@@ -52,7 +52,6 @@ router.post('/login', async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        homeArea: user.homeArea,
         accessLevel: user.accessLevel,
       },
     });
@@ -72,7 +71,6 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
         email: true,
         name: true,
         role: true,
-        homeArea: true,
         phone: true,
         accessLevel: true,
       },
@@ -194,7 +192,6 @@ router.post('/accept-invite', async (req, res) => {
         email: updatedUser.email,
         name: updatedUser.name,
         role: updatedUser.role,
-        homeArea: updatedUser.homeArea,
         accessLevel: updatedUser.accessLevel,
       },
     });

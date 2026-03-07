@@ -17,10 +17,10 @@ const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 // Send invite — HIGHEST_MANAGER only
 router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
-    const { name, email, phone, role, homeArea, workSchedule, accessLevel, managerId } = req.body;
+    const { name, email, phone, role, workSchedule, accessLevel, managerId } = req.body;
 
-    if (!name || !email || !role || !homeArea || !accessLevel) {
-      return res.status(400).json({ error: 'name, email, role, homeArea, and accessLevel are required' });
+    if (!name || !email || !role || !accessLevel) {
+      return res.status(400).json({ error: 'name, email, role, and accessLevel are required' });
     }
 
     // Check if email already exists
@@ -36,7 +36,6 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         email,
         phone: phone || null,
         role,
-        homeArea,
         workSchedule: workSchedule || undefined,
         accessLevel,
         managerId: managerId || null,
@@ -91,7 +90,6 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         name: user.name,
         email: user.email,
         role: user.role,
-        homeArea: user.homeArea,
         accessLevel: user.accessLevel,
       },
       inviteLink,

@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface FOSpotAssignment {
   id: string;
   user: {
     id: string;
     name: string;
-    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
   };
   needsCoverage?: boolean;
-  originalUserHomeArea?: HomeArea;
 }
 
 interface FOSpot {
@@ -22,78 +18,60 @@ interface FOSpot {
   assignment: FOSpotAssignment | null;
 }
 
+interface RouteAssignment {
+  id: number;
+  number: string;
+  facilitySpotId: number | null;
+  driver: { id: string; name: string } | null;
+  driverIsOff: boolean;
+}
+
 interface FOSectionProps {
   spots: FOSpot[];
+  routes?: RouteAssignment[];
   onSpotClick: (spot: FOSpot) => void;
   isManager: boolean;
   defaultExpanded?: boolean;
 }
 
-const areaColors: Record<HomeArea, string> = {
-  FO: 'bg-fo',
-  DOC: 'bg-doc',
-  UNLOAD: 'bg-unload',
-  PULLER: 'bg-puller',
-  UNASSIGNED: 'bg-gray-400',
-};
-
-const areaBorderColors: Record<HomeArea, string> = {
-  FO: 'border-blue-700',
-  DOC: 'border-orange-700',
-  UNLOAD: 'border-green-700',
-  PULLER: 'border-yellow-700',
-  UNASSIGNED: 'border-gray-400',
-};
+function formatName(fullName: string): string {
+  const parts = fullName.split(' ');
+  if (parts.length < 2) return fullName;
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+}
 
 function FOSpotCard({
   spot,
+  mappedRoutes,
   onClick,
   isManager,
 }: {
   spot: FOSpot;
+  mappedRoutes: RouteAssignment[];
   onClick: () => void;
   isManager: boolean;
 }) {
-  const isSwingFilling = spot.assignment?.user.role === 'SWING' && spot.assignment?.originalUserHomeArea;
-
   const getBackgroundClass = () => {
     if (!spot.assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    const borderColor = areaBorderColors[spot.assignment.user.homeArea];
-    if (isSwingFilling) return `text-white border-2 border-gray-500`;
-    if (spot.assignment.user.role === 'SWING') return `bg-swing text-white border-2 border-gray-500`;
-    return `${areaColors[spot.assignment.user.homeArea]} text-white border-2 ${borderColor}`;
+    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    return 'bg-fo text-white border-2 border-blue-700';
   };
 
   const needsFillOutline = spot.assignment?.needsCoverage ? 'outline outline-3 outline-red-500 outline-offset-1' : '';
-
-  const getSplitStyle = () => {
-    if (!isSwingFilling || !spot.assignment?.originalUserHomeArea) return {};
-    const colorMap: Record<HomeArea, string> = {
-      FO: '#3B82F6',
-      DOC: '#F97316',
-      UNLOAD: '#22C55E',
-      PULLER: '#EAB308',
-      UNASSIGNED: '#9CA3AF',
-    };
-    return {
-      background: `linear-gradient(135deg, #6B7280 50%, ${colorMap[spot.assignment.originalUserHomeArea]} 50%)`,
-    };
-  };
 
   return (
     <button
       onClick={onClick}
       disabled={!isManager && !spot.assignment?.needsCoverage}
-      className={`w-14 h-14 p-1 rounded transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${needsFillOutline} ${
+      className={`w-16 min-h-14 p-1 rounded transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${needsFillOutline} ${
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
-      style={getSplitStyle()}
     >
       <div className="text-xs font-medium">FO{spot.number}</div>
       {spot.assignment ? (
         <>
           <div className={`font-semibold truncate text-xs text-center w-full ${spot.assignment.needsCoverage ? 'line-through opacity-60' : ''}`}>
-            {spot.assignment.user.name.split(' ')[0]}
+            {formatName(spot.assignment.user.name)}
           </div>
           {spot.assignment.needsCoverage && (
             <div className="text-xs font-bold text-red-700">OPEN</div>
@@ -102,18 +80,39 @@ function FOSpotCard({
       ) : (
         <div className="text-gray-400 text-xs">—</div>
       )}
+      {mappedRoutes.map(route => (
+        <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
+          {route.driver && !route.driverIsOff ? formatName(route.driver.name) : `R:${route.number}`}
+        </div>
+      ))}
     </button>
   );
 }
 
 export function FOSection({
   spots,
+  routes = [],
   onSpotClick,
   isManager,
   defaultExpanded = true,
 }: FOSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const sortedSpots = [...spots].sort((a, b) => a.number - b.number);
+
+  const filledSpots = spots.filter(s => s.assignment && !s.assignment.needsCoverage).length;
+  const routesWithDriver = routes.filter(r => r.driver && !r.driverIsOff).length;
+  const totalX = filledSpots + routesWithDriver;
+  const totalY = spots.length;
+
+  // Build mapping of spotId -> routes
+  const routesBySpotId = new Map<number, RouteAssignment[]>();
+  for (const route of routes) {
+    if (route.facilitySpotId) {
+      const existing = routesBySpotId.get(route.facilitySpotId) || [];
+      existing.push(route);
+      routesBySpotId.set(route.facilitySpotId, existing);
+    }
+  }
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden shrink-0">
@@ -122,7 +121,7 @@ export function FOSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-blue-800 hover:bg-blue-100 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        FO ({spots.length})
+        FO ({totalX}/{totalY})
       </button>
       {expanded && (
         <div className="px-3 pb-3">
@@ -131,11 +130,13 @@ export function FOSection({
               <FOSpotCard
                 key={spot.id}
                 spot={spot}
+                mappedRoutes={routesBySpotId.get(spot.id) || []}
                 onClick={() => onSpotClick(spot)}
                 isManager={isManager}
               />
             ))}
           </div>
+
         </div>
       )}
     </div>

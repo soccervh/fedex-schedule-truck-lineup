@@ -1,7 +1,6 @@
 interface SwingDriver {
   id: string;
   name: string;
-  homeArea: 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
 }
 
 interface SwingDriversSidebarProps {

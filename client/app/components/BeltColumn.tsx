@@ -1,7 +1,5 @@
 import { SpotCardCompact } from './SpotCardCompact';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface TruckData {
   id: number;
   number: string;
@@ -21,11 +19,9 @@ interface Spot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
   truckAssignment?: {
     id: string;

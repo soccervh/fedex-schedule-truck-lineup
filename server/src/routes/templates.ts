@@ -26,7 +26,6 @@ router.get('/belt/:beltId', authenticate, async (req, res) => {
           select: {
             id: true,
             name: true,
-            homeArea: true,
             role: true,
           },
         },
@@ -69,7 +68,6 @@ router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRe
           select: {
             id: true,
             name: true,
-            homeArea: true,
             role: true,
           },
         },

@@ -51,7 +51,6 @@ router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRe
           select: {
             id: true,
             name: true,
-            homeArea: true,
             role: true,
           },
         },
@@ -83,7 +82,6 @@ router.patch('/:id/truck', authenticate, requireAccessLevel('OP_LEAD'), async (r
           select: {
             id: true,
             name: true,
-            homeArea: true,
             role: true,
           },
         },

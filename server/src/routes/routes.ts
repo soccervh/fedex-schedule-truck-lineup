@@ -6,7 +6,7 @@ import type { RouteSchedule } from '@prisma/client';
 const router = Router();
 
 // Helper: get allowed schedules for a given day of week (0=Sun, 6=Sat)
-function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
+export function getAllowedSchedules(dayOfWeek: number): RouteSchedule[] | null {
   switch (dayOfWeek) {
     case 0: return null; // Sunday - no routes
     case 1: return ['MON_FRI']; // Monday

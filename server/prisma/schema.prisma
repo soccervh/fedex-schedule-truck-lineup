@@ -14,14 +14,6 @@ enum Role {
   HANDLER
 }
 
-enum HomeArea {
-  FO
-  DOC
-  UNLOAD
-  PULLER
-  UNASSIGNED
-}
-
 enum TimeOffStatus {
   PENDING
   APPROVED
@@ -86,7 +78,6 @@ model User {
   phone     String?
   role      Role
   accessLevel  AccessLevel  @default(EMPLOYEE)
-  homeArea         HomeArea
   workSchedule     WorkSchedule @default(MON_FRI)
   vacationWeeks    Int          @default(0)
   vacationDays     Int          @default(0)
@@ -194,6 +185,7 @@ model FacilitySpot {
   side     String?          // "DC" or "BA" for unload spots
 
   assignments FacilityAssignment[]
+  routes      Route[]
 
   @@unique([areaId, number])
 }
@@ -252,16 +244,18 @@ enum LoadLocation {
 }
 
 model Route {
-  id           Int            @id @default(autoincrement())
-  number       String         @unique
-  assignedArea RouteArea
-  beltSpotId   Int?
-  beltSpot     Spot?          @relation(fields: [beltSpotId], references: [id])
-  loadLocation LoadLocation?
-  schedule     RouteSchedule  @default(MON_FRI)
-  isActive     Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id              Int            @id @default(autoincrement())
+  number          String         @unique
+  assignedArea    RouteArea
+  beltSpotId      Int?
+  beltSpot        Spot?          @relation(fields: [beltSpotId], references: [id])
+  facilitySpotId  Int?
+  facilitySpot    FacilitySpot?  @relation(fields: [facilitySpotId], references: [id])
+  loadLocation    LoadLocation?
+  schedule        RouteSchedule  @default(MON_FRI)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model DailyBriefing {

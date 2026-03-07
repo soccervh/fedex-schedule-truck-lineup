@@ -29,7 +29,6 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         name: true,
         email: isHighAccess ? true : false,
         role: true,
-        homeArea: true,
         phone: isHighAccess ? true : false,
         accessLevel: isHighAccess ? true : false,
         managerId: isHighAccess ? true : false,
@@ -184,7 +183,6 @@ router.get('/swing', authenticate, async (req, res) => {
       select: {
         id: true,
         name: true,
-        homeArea: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -216,7 +214,6 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
         email: true,
         phone: true,
         role: true,
-        homeArea: true,
         workSchedule: true,
         accessLevel: true,
         managerId: true,
@@ -254,9 +251,9 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
 // Create person (HIGHEST_MANAGER only)
 router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
-    const { email, password, name, phone, role, homeArea, workSchedule, accessLevel, managerId } = req.body;
+    const { email, password, name, phone, role, workSchedule, accessLevel, managerId } = req.body;
 
-    if (!email || !password || !name || !role || !homeArea) {
+    if (!email || !password || !name || !role) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -274,7 +271,6 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         name,
         phone,
         role,
-        homeArea,
         workSchedule,
         accessLevel,
         managerId,
@@ -284,7 +280,6 @@ router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req
         email: true,
         name: true,
         role: true,
-        homeArea: true,
         phone: true,
       },
     });
@@ -301,7 +296,7 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
   try {
     const id = req.params.id as string;
     const {
-      name, phone, email, role, homeArea, isActive, workSchedule,
+      name, phone, email, role, isActive, workSchedule,
       vacationWeeks, vacationDays, personalDays, holidays, sickDays,
       accessLevel, managerId,
     } = req.body;
@@ -313,7 +308,6 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
         phone,
         email,
         role,
-        homeArea,
         isActive,
         workSchedule,
         vacationWeeks,
@@ -329,7 +323,6 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
         email: true,
         name: true,
         role: true,
-        homeArea: true,
         phone: true,
         isActive: true,
         workSchedule: true,

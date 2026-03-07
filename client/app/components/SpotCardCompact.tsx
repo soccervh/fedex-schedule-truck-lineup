@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { formatSpotName } from '../utils/belt';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface SpotAssignment {
   id: string;
   truckNumber: string;
@@ -10,11 +8,9 @@ interface SpotAssignment {
   user: {
     id: string;
     name: string;
-    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
   };
   needsCoverage: boolean;
-  originalUserHomeArea?: HomeArea;
 }
 
 interface TruckAssignment {

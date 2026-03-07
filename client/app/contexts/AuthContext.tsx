@@ -11,7 +11,6 @@ interface User {
   email: string;
   name: string;
   role: 'MANAGER' | 'DRIVER' | 'SWING' | 'CSA' | 'HANDLER';
-  homeArea: 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
   accessLevel: AccessLevel;
 }
 

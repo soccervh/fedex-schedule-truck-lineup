@@ -101,6 +101,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       queryClient.invalidateQueries({ queryKey: ['spot-routes', spot.id] });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
+      queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
       setAreaSaved(true);
       setTimeout(() => setAreaSaved(false), 2000);
     },

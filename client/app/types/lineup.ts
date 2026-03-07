@@ -1,5 +1,3 @@
-export type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 export type TruckType = 'REACH' | 'NINE_HUNDRED' | 'SPRINTER' | 'VAN' | 'RENTAL' | 'UNKNOWN';
 
 export interface TruckData {
@@ -22,11 +20,9 @@ export interface BeltSpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
   truckAssignment?: {
     id: string;
@@ -52,11 +48,9 @@ export interface FacilitySpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage?: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
 }
 
@@ -87,7 +81,21 @@ export interface Truck {
 export interface SwingDriver {
   id: string;
   name: string;
-  homeArea: HomeArea;
+}
+
+export interface RouteAssignment {
+  id: number;
+  number: string;
+  facilitySpotId: number | null;
+  driver: { id: string; name: string } | null;
+  driverIsOff: boolean;
+}
+
+export interface RouteAssignments {
+  FO: RouteAssignment[];
+  DOC: RouteAssignment[];
+  UNLOAD: RouteAssignment[];
+  SORT: RouteAssignment[];
 }
 
 export const TRUCK_TYPE_LABELS: Record<TruckType, string> = {

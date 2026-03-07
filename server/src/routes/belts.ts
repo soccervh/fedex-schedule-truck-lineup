@@ -84,7 +84,6 @@ router.get('/all/assignments', authenticate, async (req, res) => {
                   select: {
                     id: true,
                     name: true,
-                    homeArea: true,
                     role: true,
                   },
                 },
@@ -194,7 +193,6 @@ router.get('/:beltId/assignments', authenticate, async (req, res) => {
                   select: {
                     id: true,
                     name: true,
-                    homeArea: true,
                     role: true,
                   },
                 },

@@ -10,7 +10,6 @@ interface Person {
   email: string;
   phone?: string;
   role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
-  homeArea?: string;
   workSchedule?: string;
   accessLevel?: AccessLevel;
   managerId?: string;
@@ -37,7 +36,6 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
     email: person?.email || '',
     phone: person?.phone || '',
     role: person?.role || 'DRIVER',
-    homeArea: person?.homeArea || 'UNASSIGNED',
     workSchedule: person?.workSchedule || 'MON_FRI',
     accessLevel: person?.accessLevel || 'EMPLOYEE' as AccessLevel,
     managerId: person?.managerId || '',
@@ -63,7 +61,6 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
         name: data.name,
         email: data.email,
         role: data.role,
-        homeArea: data.homeArea,
         workSchedule: data.workSchedule,
         accessLevel: data.accessLevel,
       };
@@ -169,21 +166,6 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
               <option value="MANAGER">Manager</option>
               <option value="CSA">CSA</option>
               <option value="HANDLER">Handler</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Home Area</label>
-            <select
-              value={formData.homeArea}
-              onChange={(e) => setFormData({ ...formData, homeArea: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="FO">FO</option>
-              <option value="DOC">DOC</option>
-              <option value="UNLOAD">Unload</option>
-              <option value="PULLER">Puller</option>
-              <option value="UNASSIGNED">Unassigned</option>
             </select>
           </div>
 

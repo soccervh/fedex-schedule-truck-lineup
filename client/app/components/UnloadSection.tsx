@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface FacilitySpotAssignment {
   id: string;
   user: {
     id: string;
     name: string;
-    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
   };
   needsCoverage?: boolean;
-  originalUserHomeArea?: HomeArea;
 }
 
 interface FacilitySpot {
@@ -23,79 +19,61 @@ interface FacilitySpot {
   assignment: FacilitySpotAssignment | null;
 }
 
+interface RouteAssignment {
+  id: number;
+  number: string;
+  facilitySpotId: number | null;
+  driver: { id: string; name: string } | null;
+  driverIsOff: boolean;
+}
+
 interface UnloadSectionProps {
   dcSpots: FacilitySpot[];
   baSpots: FacilitySpot[];
+  routes?: RouteAssignment[];
   onSpotClick: (spot: FacilitySpot) => void;
   isManager: boolean;
   defaultExpanded?: boolean;
 }
 
-const areaColors: Record<HomeArea, string> = {
-  FO: 'bg-fo',
-  DOC: 'bg-doc',
-  UNLOAD: 'bg-unload',
-  PULLER: 'bg-puller',
-  UNASSIGNED: 'bg-gray-400',
-};
-
-const areaBorderColors: Record<HomeArea, string> = {
-  FO: 'border-blue-700',
-  DOC: 'border-orange-700',
-  UNLOAD: 'border-green-700',
-  PULLER: 'border-yellow-700',
-  UNASSIGNED: 'border-gray-400',
-};
+function formatName(fullName: string): string {
+  const parts = fullName.split(' ');
+  if (parts.length < 2) return fullName;
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+}
 
 function UnloadSpotCard({
   spot,
+  mappedRoutes,
   onClick,
   isManager,
 }: {
   spot: FacilitySpot;
+  mappedRoutes: RouteAssignment[];
   onClick: () => void;
   isManager: boolean;
 }) {
-  const isSwingFilling = spot.assignment?.user.role === 'SWING' && spot.assignment?.originalUserHomeArea;
-
   const getBackgroundClass = () => {
     if (!spot.assignment) return 'bg-gray-50 border-2 border-dashed border-gray-300';
-    const borderColor = areaBorderColors[spot.assignment.user.homeArea];
-    if (isSwingFilling) return `text-white border-2 border-gray-500`;
-    if (spot.assignment.user.role === 'SWING') return `bg-swing text-white border-2 border-gray-500`;
-    return `${areaColors[spot.assignment.user.homeArea]} text-white border-2 ${borderColor}`;
+    if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white border-2 border-gray-500';
+    return 'bg-unload text-white border-2 border-green-700';
   };
 
   const needsFillOutline = spot.assignment?.needsCoverage ? 'outline outline-3 outline-red-500 outline-offset-1' : '';
-
-  const getSplitStyle = () => {
-    if (!isSwingFilling || !spot.assignment?.originalUserHomeArea) return {};
-    const colorMap: Record<HomeArea, string> = {
-      FO: '#3B82F6',
-      DOC: '#F97316',
-      UNLOAD: '#22C55E',
-      PULLER: '#EAB308',
-      UNASSIGNED: '#9CA3AF',
-    };
-    return {
-      background: `linear-gradient(135deg, #6B7280 50%, ${colorMap[spot.assignment.originalUserHomeArea]} 50%)`,
-    };
-  };
 
   return (
     <button
       onClick={onClick}
       disabled={!isManager && !spot.assignment?.needsCoverage}
-      className={`w-14 h-14 p-1 rounded transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${needsFillOutline} ${
+      className={`w-16 min-h-14 p-1 rounded transition-all hover:shadow-md flex flex-col items-center justify-center ${getBackgroundClass()} ${needsFillOutline} ${
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
-      style={getSplitStyle()}
     >
       <div className="text-xs font-medium">U{spot.number}</div>
       {spot.assignment ? (
         <>
           <div className={`font-semibold truncate text-xs text-center w-full ${spot.assignment.needsCoverage ? 'line-through opacity-60' : ''}`}>
-            {spot.assignment.user.name.split(' ')[0]}
+            {formatName(spot.assignment.user.name)}
           </div>
           {spot.assignment.needsCoverage && (
             <div className="text-xs font-bold text-red-700">OPEN</div>
@@ -104,6 +82,11 @@ function UnloadSpotCard({
       ) : (
         <div className="text-gray-400 text-xs">—</div>
       )}
+      {mappedRoutes.map(route => (
+        <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
+          {route.driver && !route.driverIsOff ? formatName(route.driver.name) : `R:${route.number}`}
+        </div>
+      ))}
     </button>
   );
 }
@@ -111,11 +94,28 @@ function UnloadSpotCard({
 export function UnloadSection({
   dcSpots,
   baSpots,
+  routes = [],
   onSpotClick,
   isManager,
   defaultExpanded = true,
 }: UnloadSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  const allUnloadSpots = [...dcSpots, ...baSpots];
+  const filledSpots = allUnloadSpots.filter(s => s.assignment && !s.assignment.needsCoverage).length;
+  const routesWithDriver = routes.filter(r => r.driver && !r.driverIsOff).length;
+  const totalX = filledSpots + routesWithDriver;
+  const totalY = allUnloadSpots.length;
+
+  // Build mapping of spotId -> routes
+  const routesBySpotId = new Map<number, RouteAssignment[]>();
+  for (const route of routes) {
+    if (route.facilitySpotId) {
+      const existing = routesBySpotId.get(route.facilitySpotId) || [];
+      existing.push(route);
+      routesBySpotId.set(route.facilitySpotId, existing);
+    }
+  }
 
   return (
     <div className="bg-green-50 border border-green-200 rounded-lg overflow-hidden shrink-0">
@@ -124,7 +124,7 @@ export function UnloadSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-green-800 hover:bg-green-100 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        UNLOAD ({dcSpots.length + baSpots.length})
+        UNLOAD ({totalX}/{totalY})
       </button>
       {expanded && (
         <div className="px-3 pb-3">
@@ -134,7 +134,7 @@ export function UnloadSection({
               <div className="text-xs text-gray-500 text-center mb-1">D/C Side</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {dcSpots.map((spot) => (
-                  <UnloadSpotCard key={spot.id} spot={spot} onClick={() => onSpotClick(spot)} isManager={isManager} />
+                  <UnloadSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
                 ))}
               </div>
             </div>
@@ -143,11 +143,12 @@ export function UnloadSection({
               <div className="text-xs text-gray-500 text-center mb-1">B/A Side</div>
               <div className="flex flex-wrap gap-1 justify-center">
                 {baSpots.map((spot) => (
-                  <UnloadSpotCard key={spot.id} spot={spot} onClick={() => onSpotClick(spot)} isManager={isManager} />
+                  <UnloadSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
                 ))}
               </div>
             </div>
           </div>
+
         </div>
       )}
     </div>

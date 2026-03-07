@@ -30,7 +30,6 @@ router.get('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthReq
           select: {
             id: true,
             name: true,
-            homeArea: true,
           },
         },
       },

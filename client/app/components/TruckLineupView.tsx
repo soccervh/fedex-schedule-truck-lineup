@@ -1,8 +1,6 @@
 import { BeltColumn } from './BeltColumn';
 import { Plus, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, Search } from 'lucide-react';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
-
 interface TruckData {
   id: number;
   number: string;
@@ -22,11 +20,9 @@ interface BeltSpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER';
     };
     needsCoverage: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
   truckAssignment?: {
     id: string;

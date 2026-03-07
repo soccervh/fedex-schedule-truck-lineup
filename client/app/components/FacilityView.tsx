@@ -5,8 +5,6 @@ import { SortSection } from './SortSection';
 import { DocSection } from './DocSection';
 import { FOSection } from './FOSection';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface BeltSpot {
   id: number;
   number: number;
@@ -17,11 +15,9 @@ interface BeltSpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
 }
 
@@ -43,11 +39,9 @@ interface FacilitySpot {
     user: {
       id: string;
       name: string;
-      homeArea: HomeArea;
       role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
     };
     needsCoverage?: boolean;
-    originalUserHomeArea?: HomeArea;
   } | null;
 }
 
@@ -57,11 +51,20 @@ interface FacilityArea {
   spots: FacilitySpot[];
 }
 
+interface RouteAssignment {
+  id: number;
+  number: string;
+  facilitySpotId: number | null;
+  driver: { id: string; name: string } | null;
+  driverIsOff: boolean;
+}
+
 interface FacilityViewProps {
   belts: Belt[];
   facilityAreas: Record<string, FacilityArea>;
+  routeAssignments?: { FO: RouteAssignment[]; DOC: RouteAssignment[]; UNLOAD: RouteAssignment[]; SORT: RouteAssignment[] };
   onBeltSpotClick: (spot: BeltSpot, beltId: number) => void;
-  onFacilitySpotClick: (spot: FacilitySpot) => void;
+  onFacilitySpotClick: (spot: FacilitySpot, sectionName: string) => void;
   onBeltDoubleClick: (beltId: number) => void;
   isManager: boolean;
 }
@@ -69,6 +72,7 @@ interface FacilityViewProps {
 export function FacilityView({
   belts,
   facilityAreas,
+  routeAssignments,
   onBeltSpotClick,
   onFacilitySpotClick,
   onBeltDoubleClick,
@@ -106,7 +110,8 @@ export function FacilityView({
       <UnloadSection
         dcSpots={unloadDC}
         baSpots={unloadBA}
-        onSpotClick={onFacilitySpotClick}
+        routes={routeAssignments?.UNLOAD || []}
+        onSpotClick={(spot) => onFacilitySpotClick(spot, 'UNLOAD')}
         isManager={isManager}
       />
 
@@ -114,7 +119,8 @@ export function FacilityView({
       <SortSection
         dcSpots={sortDC}
         baSpots={sortBA}
-        onSpotClick={onFacilitySpotClick}
+        routes={routeAssignments?.SORT || []}
+        onSpotClick={(spot) => onFacilitySpotClick(spot, 'SORT')}
         isManager={isManager}
       />
 
@@ -125,14 +131,16 @@ export function FacilityView({
         fineSortSpots={fineSort}
         quarterbackLowerSpots={qbLower}
         rampSpots={ramps}
-        onSpotClick={onFacilitySpotClick}
+        routes={routeAssignments?.DOC || []}
+        onSpotClick={(spot) => onFacilitySpotClick(spot, 'DOC')}
         isManager={isManager}
       />
 
       {/* FO Section */}
       <FOSection
         spots={foSpots}
-        onSpotClick={onFacilitySpotClick}
+        routes={routeAssignments?.FO || []}
+        onSpotClick={(spot) => onFacilitySpotClick(spot, 'FO')}
         isManager={isManager}
       />
 

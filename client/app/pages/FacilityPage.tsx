@@ -9,7 +9,8 @@ import { BeltDetailView } from '../components/BeltDetailView';
 import { NeedsFillSidebar } from '../components/NeedsFillSidebar';
 import { SwingDriversSidebar } from '../components/SwingDriversSidebar';
 import { AssignmentModal } from '../components/AssignmentModal';
-import type { Belt, BeltSpot, FacilityArea, FacilitySpot, SwingDriver } from '../types/lineup';
+import { FacilityAssignmentModal } from '../components/FacilityAssignmentModal';
+import type { Belt, BeltSpot, FacilityArea, FacilitySpot, SwingDriver, RouteAssignments } from '../types/lineup';
 
 export default function FacilityPage() {
   const { isManager } = useAuth();
@@ -18,6 +19,7 @@ export default function FacilityPage() {
   });
   const [detailBeltId, setDetailBeltId] = useState<number | null>(null);
   const [selectedBeltSpot, setSelectedBeltSpot] = useState<{ spot: BeltSpot; beltId: number } | null>(null);
+  const [selectedFacilitySpot, setSelectedFacilitySpot] = useState<{ spot: FacilitySpot; sectionName: string } | null>(null);
 
   const { data: beltsData, isLoading: beltsLoading } = useQuery({
     queryKey: ['all-belts', selectedDate],
@@ -51,14 +53,24 @@ export default function FacilityPage() {
     },
   });
 
+  const { data: routeAssignmentsData } = useQuery({
+    queryKey: ['facility-route-assignments', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/facility/route-assignments?date=${selectedDate}`);
+      return res.data as RouteAssignments;
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
   const handleBeltSpotClick = (spot: BeltSpot, beltId: number) => {
     if (!isManager) return;
     setSelectedBeltSpot({ spot, beltId });
   };
 
-  const handleFacilitySpotClick = (spot: FacilitySpot) => {
+  const handleFacilitySpotClick = (spot: FacilitySpot, sectionName: string) => {
     if (!isManager) return;
-    console.log('Facility spot clicked:', spot);
+    setSelectedFacilitySpot({ spot, sectionName });
   };
 
   const handleBeltDoubleClick = (beltId: number) => {
@@ -115,6 +127,7 @@ export default function FacilityPage() {
               <FacilityView
                 belts={beltsData}
                 facilityAreas={facilityAreasData}
+                routeAssignments={routeAssignmentsData}
                 onBeltSpotClick={handleBeltSpotClick}
                 onFacilitySpotClick={handleFacilitySpotClick}
                 onBeltDoubleClick={handleBeltDoubleClick}
@@ -147,6 +160,18 @@ export default function FacilityPage() {
             <span>Puller</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-500"></div>
+            <span>Label Facer</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-teal-500"></div>
+            <span>Scanner</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-indigo-500"></div>
+            <span>Splitter</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-swing"></div>
             <span>Swing</span>
           </div>
@@ -170,7 +195,7 @@ export default function FacilityPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Belt Assignment Modal */}
       {selectedBeltSpot && (() => {
         const belt = beltsData?.find(b => b.id === selectedBeltSpot.beltId);
         return (
@@ -184,6 +209,16 @@ export default function FacilityPage() {
           />
         );
       })()}
+
+      {/* Facility Spot Assignment Modal */}
+      {selectedFacilitySpot && (
+        <FacilityAssignmentModal
+          spot={selectedFacilitySpot.spot}
+          sectionName={selectedFacilitySpot.sectionName}
+          routes={routeAssignmentsData?.[selectedFacilitySpot.sectionName as keyof RouteAssignments] || []}
+          onClose={() => setSelectedFacilitySpot(null)}
+        />
+      )}
     </div>
   );
 }

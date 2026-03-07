@@ -1,7 +1,5 @@
 import { formatSpotName } from '../utils/belt';
 
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER' | 'UNASSIGNED';
-
 interface SpotAssignment {
   id: string;
   truckNumber: string;
@@ -9,11 +7,9 @@ interface SpotAssignment {
   user: {
     id: string;
     name: string;
-    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER' | 'CSA' | 'HANDLER';
   };
   needsCoverage: boolean;
-  originalUserHomeArea?: HomeArea;
 }
 
 interface TimeOffInfo {
@@ -38,20 +34,15 @@ interface SpotCardDetailedProps {
   isManager: boolean;
 }
 
-const areaColors: Record<HomeArea, string> = {
+const loadLocationColors: Record<string, string> = {
   FO: 'bg-fo',
   DOC: 'bg-doc',
   UNLOAD: 'bg-unload',
   PULLER: 'bg-puller',
+  LABEL_FACER: 'bg-amber-500',
+  SCANNER: 'bg-teal-500',
+  SPLITTER: 'bg-indigo-500',
   UNASSIGNED: 'bg-gray-400',
-};
-
-const areaLabels: Record<HomeArea, string> = {
-  FO: 'FO',
-  DOC: 'Doc',
-  UNLOAD: 'Unload',
-  PULLER: 'Puller',
-  UNASSIGNED: 'Unassigned',
 };
 
 export function SpotCardDetailed({
@@ -78,7 +69,7 @@ export function SpotCardDetailed({
     if (!assignment) return 'bg-gray-200';
     if (assignment.needsCoverage) return 'bg-red-500';
     if (assignment.user.role === 'SWING') return 'bg-swing';
-    return areaColors[assignment.user.homeArea];
+    return loadLocationColors[route?.loadLocation || 'UNASSIGNED'] || 'bg-gray-400';
   };
 
   return (

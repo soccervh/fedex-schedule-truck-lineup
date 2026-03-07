@@ -57,6 +57,7 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.removeQueries({ queryKey: ['facility-route-assignments'] });
       onClose();
     },
   });
@@ -67,6 +68,7 @@ export function RouteModal({ route, onClose }: RouteModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.removeQueries({ queryKey: ['facility-route-assignments'] });
       onClose();
     },
   });

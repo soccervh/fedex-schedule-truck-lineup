@@ -212,7 +212,6 @@ async function main() {
       password: hashedPassword,
       name: 'Admin Manager',
       role: 'MANAGER',
-      homeArea: 'FO',
       accessLevel: 'HIGHEST_MANAGER',
     },
   });

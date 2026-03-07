@@ -1,15 +1,11 @@
-type HomeArea = 'FO' | 'DOC' | 'UNLOAD' | 'PULLER';
-
 interface FOSpotAssignment {
   id: string;
   user: {
     id: string;
     name: string;
-    homeArea: HomeArea;
     role: 'DRIVER' | 'SWING' | 'MANAGER';
   };
   needsCoverage?: boolean;
-  originalUserHomeArea?: HomeArea;
 }
 
 interface FOSpot {
@@ -24,13 +20,6 @@ interface FOColumnProps {
   isManager: boolean;
 }
 
-const areaColors: Record<HomeArea, string> = {
-  FO: 'bg-fo',
-  DOC: 'bg-doc',
-  UNLOAD: 'bg-unload',
-  PULLER: 'bg-puller',
-};
-
 function FOSpotCard({
   spot,
   onClick,
@@ -40,27 +29,11 @@ function FOSpotCard({
   onClick: () => void;
   isManager: boolean;
 }) {
-  const isSwingFilling = spot.assignment?.user.role === 'SWING' && spot.assignment?.originalUserHomeArea;
-
   const getBackgroundClass = () => {
     if (!spot.assignment) return 'bg-gray-50 border-dashed';
     if (spot.assignment.needsCoverage) return 'bg-red-100 border-red-400 border-2';
-    if (isSwingFilling) return 'text-white';
     if (spot.assignment.user.role === 'SWING') return 'bg-swing text-white';
-    return `${areaColors[spot.assignment.user.homeArea]} text-white`;
-  };
-
-  const getSplitStyle = () => {
-    if (!isSwingFilling || !spot.assignment?.originalUserHomeArea) return {};
-    const colorMap: Record<HomeArea, string> = {
-      FO: '#3B82F6',
-      DOC: '#F97316',
-      UNLOAD: '#22C55E',
-      PULLER: '#EAB308',
-    };
-    return {
-      background: `linear-gradient(135deg, #6B7280 50%, ${colorMap[spot.assignment.originalUserHomeArea]} 50%)`,
-    };
+    return 'bg-fo text-white';
   };
 
   return (
@@ -70,7 +43,6 @@ function FOSpotCard({
       className={`w-full p-2 rounded border transition-all hover:shadow-md text-left ${getBackgroundClass()} ${
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
-      style={getSplitStyle()}
     >
       <div className="flex justify-between items-center text-xs font-medium opacity-90">
         <span>FO{spot.number}</span>
