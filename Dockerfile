@@ -7,7 +7,7 @@ FROM base AS server-build
 COPY server/package.json server/package-lock.json ./server/
 RUN cd server && npm install
 COPY server/ ./server/
-RUN cd server && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate && npm run build
+RUN cd server && npx prisma generate && npm run build
 
 # --- Build client after server (COPY --from creates dependency to avoid parallel OOM) ---
 FROM base AS client-build
@@ -28,6 +28,7 @@ RUN cd server && npm install --omit=dev
 COPY --from=server-build /app/server/dist ./server/dist
 COPY --from=server-build /app/server/node_modules/.prisma ./server/node_modules/.prisma
 COPY server/prisma ./server/prisma
+COPY server/prisma.config.ts ./server/prisma.config.ts
 
 # Copy built client
 COPY --from=client-build /app/client/build ./client/build
