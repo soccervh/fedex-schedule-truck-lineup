@@ -59,6 +59,7 @@ export function FacilityAssignmentModal({ spot, sectionName, routes, onClose }: 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
       queryClient.invalidateQueries({ queryKey: ['facility-areas'] });
+      queryClient.invalidateQueries({ queryKey: ['all-belts'] });
     },
   });
 
