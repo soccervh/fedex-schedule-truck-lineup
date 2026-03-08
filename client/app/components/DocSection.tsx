@@ -58,7 +58,7 @@ function DocSpotCard({
   const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
   const isSwing = spot.assignment?.user.role === 'SWING' || mappedRoutes.some(r => r.driver && !r.driverIsOff && r.driver.role === 'SWING');
   const getBackgroundClass = () => {
-    if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 border-2 border-dashed border-gray-300';
+    if (!spot.assignment && !hasRouteDriver) return 'bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border-2 border-dashed border-gray-300 dark:border-gray-500';
     if (isSwing) return 'bg-swing text-white border-2 border-gray-500';
     return 'bg-doc text-white border-2 border-orange-700';
   };
