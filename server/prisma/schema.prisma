@@ -72,7 +72,7 @@ enum RouteSchedule {
 
 model User {
   id        String    @id @default(cuid())
-  email     String    @unique
+  email     String?   @unique
   password  String?
   name      String
   phone     String?
@@ -87,6 +87,7 @@ model User {
   sickDayCarryover Int          @default(0)
   balanceResetDate DateTime     @default(now())
   isActive         Boolean      @default(true)
+  isSuspended      Boolean      @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

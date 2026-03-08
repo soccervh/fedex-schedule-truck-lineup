@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { todayET } from '../lib/date';
 import { PersonModal } from '../components/PersonModal';
 import { Link } from 'react-router';
-import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, ShieldOff, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const roleLabels: Record<string, string> = { DRIVER: 'Driver', SWING: 'Swing', MANAGER: 'Manager', CSA: 'CSA', HANDLER: 'Handler' };
@@ -104,6 +104,15 @@ export default function People() {
     },
   });
 
+  const suspendMutation = useMutation({
+    mutationFn: async ({ id, isSuspended }: { id: string; isSuspended: boolean }) => {
+      return api.patch(`/people/${id}/suspend`, { isSuspended });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['people'] });
+    },
+  });
+
   const assignRouteMutation = useMutation({
     mutationFn: async ({ userId, routeId }: { userId: string; routeId: number }) => {
       const res = await api.post('/people/assign-route', { userId, routeId });
@@ -190,7 +199,7 @@ export default function People() {
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
           >
             <Plus size={18} />
-            Invite Employee
+            Add Employee
           </button>
         )}
       </div>
@@ -267,16 +276,23 @@ export default function People() {
               {filteredPeople?.map((person: any) => (
                 <tr key={person.id}>
                   <td className="px-3 py-3 whitespace-nowrap font-medium text-sm">
-                    {canViewDetails ? (
-                      <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {person.name}
-                      </Link>
-                    ) : (
-                      person.name
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {canViewDetails ? (
+                        <Link to={`/people/${person.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {person.name}
+                        </Link>
+                      ) : (
+                        person.name
+                      )}
+                      {person.isSuspended && (
+                        <span className="px-1.5 py-0.5 text-[10px] rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 font-medium">
+                          SUSPENDED
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400 text-sm">
-                    {person.email}
+                    {person.email || <span className="text-gray-300 dark:text-gray-600 italic">No email</span>}
                   </td>
                   <td className="px-2 sm:px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${
@@ -335,12 +351,24 @@ export default function People() {
                       <button
                         onClick={() => handleEdit(person)}
                         className="text-gray-400 hover:text-blue-600 mr-2"
+                        title="Edit"
                       >
                         <Pencil size={16} />
                       </button>
+                      {person.email && (
+                        <button
+                          onClick={() => suspendMutation.mutate({ id: person.id, isSuspended: !person.isSuspended })}
+                          className={`mr-2 ${person.isSuspended ? 'text-green-500 hover:text-green-700' : 'text-gray-400 hover:text-yellow-600'}`}
+                          title={person.isSuspended ? 'Unsuspend' : 'Suspend'}
+                          disabled={suspendMutation.isPending}
+                        >
+                          {person.isSuspended ? <Shield size={16} /> : <ShieldOff size={16} />}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDelete(person.id)}
                         className="text-gray-400 hover:text-red-600"
+                        title="Deactivate"
                       >
                         <Trash2 size={16} />
                       </button>

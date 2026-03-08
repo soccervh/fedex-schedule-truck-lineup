@@ -1,8 +1,12 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { authenticate, requireAccessLevel, AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/password';
 import { prisma } from '../lib/prisma';
 import { ensureBalancesReset, getUsedBalances } from '../utils/balance';
+import { sendEmail } from '../utils/email';
+
+const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
 const router = Router();
 
@@ -20,6 +24,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         role: true,
         phone: isHighAccess ? true : false,
         accessLevel: isHighAccess ? true : false,
+        isSuspended: isHighAccess ? true : false,
         managerId: isHighAccess ? true : false,
         manager: isHighAccess ? { select: { id: true, name: true } } : false,
       },
@@ -212,6 +217,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
         sickDayCarryover: true,
         balanceResetDate: true,
         isActive: true,
+        isSuspended: true,
       },
     });
 
@@ -237,23 +243,22 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
 // Create person (HIGHEST_MANAGER only)
 router.post('/', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
   try {
-    const { email, password, name, phone, role, workSchedule, accessLevel, managerId } = req.body;
+    const { email, name, phone, role, workSchedule, accessLevel, managerId } = req.body;
 
-    if (!email || !password || !name || !role) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!name || !role) {
+      return res.status(400).json({ error: 'Name and role are required' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ error: 'Email already exists' });
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
     }
-
-    const hashedPassword = await hashPassword(password);
 
     const user = await prisma.user.create({
       data: {
-        email,
-        password: hashedPassword,
+        email: email || null,
         name,
         phone,
         role,
@@ -286,6 +291,18 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
       vacationWeeks, vacationDays, personalDays, holidays, sickDays,
       accessLevel, managerId,
     } = req.body;
+
+    // Check if email is being added to a user who didn't have one
+    const existingUser = await prisma.user.findUnique({ where: { id }, select: { email: true, name: true } });
+    const isAddingEmail = email && !existingUser?.email;
+
+    if (isAddingEmail) {
+      // Check email isn't already taken
+      const emailTaken = await prisma.user.findUnique({ where: { email } });
+      if (emailTaken) {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id },
@@ -321,10 +338,69 @@ router.put('/:id', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (r
       },
     });
 
-    res.json(user);
+    // Auto-send invite when email is added for the first time
+    if (isAddingEmail) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+      await prisma.inviteToken.create({
+        data: { token, userId: id, expiresAt },
+      });
+
+      const inviter = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { name: true },
+      });
+
+      const inviteLink = `${APP_URL}/invite/accept?token=${token}`;
+
+      sendEmail(
+        [email],
+        'You\'re invited to FedEx Truck Lineup',
+        `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Welcome to FedEx Truck Lineup, ${user.name}!</h2>
+          <p>${inviter?.name || 'A manager'} has invited you to join the FedEx Truck Lineup scheduling system.</p>
+          <p>Click the button below to set up your account and create your password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteLink}" style="background-color: #4F0084; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-size: 16px;">
+              Set Up Your Account
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">This invite link will expire in 48 hours.</p>
+          <p style="color: #666; font-size: 12px; word-break: break-all;">${inviteLink}</p>
+        </div>
+        `
+      );
+    }
+
+    res.json({ ...user, inviteSent: isAddingEmail });
   } catch (error) {
     console.error('Update person error:', error);
     res.status(500).json({ error: 'Failed to update person' });
+  }
+});
+
+// Toggle suspend/unsuspend (HIGHEST_MANAGER only)
+router.patch('/:id/suspend', authenticate, requireAccessLevel('HIGHEST_MANAGER'), async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+    const { isSuspended } = req.body;
+
+    if (typeof isSuspended !== 'boolean') {
+      return res.status(400).json({ error: 'isSuspended (boolean) is required' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isSuspended },
+      select: { id: true, name: true, isSuspended: true },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Suspend person error:', error);
+    res.status(500).json({ error: 'Failed to update suspension status' });
   }
 });
 

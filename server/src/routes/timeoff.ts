@@ -154,7 +154,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
       };
       const dateList = datesToCreate.map(d => new Date(d).toLocaleDateString()).join(', ');
       sendEmail(
-        [requester.manager.email],
+        [requester.manager.email!],
         `Time Off Request: ${requester.name}`,
         `<p><strong>${requester.name}</strong> has requested time off.</p>
          <p><strong>Type:</strong> ${typeLabels[type] || type}</p>

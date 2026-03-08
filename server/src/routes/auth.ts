@@ -30,6 +30,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    if (user.isSuspended) {
+      return res.status(403).json({ error: 'Your account has been suspended. Contact your manager.' });
+    }
+
     if (!user.password) {
       return res.status(401).json({ error: 'Account not yet activated. Check your email for the invite link.' });
     }

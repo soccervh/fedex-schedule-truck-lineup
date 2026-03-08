@@ -180,7 +180,7 @@ router.post('/:id/resend', authenticate, requireAccessLevel('HIGHEST_MANAGER'), 
 
     // Send invite email (fire and forget — don't block the response)
     sendEmail(
-      [user.email],
+      [user.email!],
       'You\'re invited to FedEx Truck Lineup',
       `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
