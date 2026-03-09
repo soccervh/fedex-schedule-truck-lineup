@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { X } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import type { AccessLevel } from '../contexts/AuthContext';
 
 interface Person {
@@ -13,6 +13,7 @@ interface Person {
   workSchedule?: string;
   accessLevel?: AccessLevel;
   managerId?: string;
+  isActive?: boolean;
 }
 
 interface PersonModalProps {
@@ -95,6 +96,20 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
     },
   });
 
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/invites/${person?.id}/resend`);
+      return res.data;
+    },
+    onSuccess: () => {
+      setResendSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ['invites', 'pending'] });
+      setTimeout(() => setResendSuccess(false), 3000);
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<typeof formData>) => {
       return api.put(`/people/${person?.id}`, data);
@@ -159,16 +174,34 @@ export function PersonModal({ person, onClose }: PersonModalProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email {!isEditing && <span className="text-gray-400 font-normal">(optional — invite sent if provided)</span>}
             </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
-              placeholder={isEditing && !person?.email ? 'Add email to send invite...' : ''}
-            />
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="flex-1 px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                placeholder={isEditing && !person?.email ? 'Add email to send invite...' : ''}
+              />
+              {isEditing && person?.email && !person?.isActive && (
+                <button
+                  type="button"
+                  onClick={() => resendMutation.mutate()}
+                  disabled={resendMutation.isPending || resendSuccess}
+                  className="flex items-center gap-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                >
+                  <RefreshCw size={14} className={resendMutation.isPending ? 'animate-spin' : ''} />
+                  {resendSuccess ? 'Sent!' : 'Resend Invite'}
+                </button>
+              )}
+            </div>
             {isEditing && !person?.email && formData.email && (
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 An invite will be sent when you save.
+              </p>
+            )}
+            {resendMutation.isError && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                Failed to resend invite.
               </p>
             )}
           </div>
