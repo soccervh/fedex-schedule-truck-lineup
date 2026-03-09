@@ -4,6 +4,7 @@ import { UnloadSection } from './UnloadSection';
 import { SortSection } from './SortSection';
 import { DocSection } from './DocSection';
 import { FOSection } from './FOSection';
+import { LateStarterSection } from './LateStarterSection';
 
 interface BeltSpot {
   id: number;
@@ -62,7 +63,7 @@ interface RouteAssignment {
 interface FacilityViewProps {
   belts: Belt[];
   facilityAreas: Record<string, FacilityArea>;
-  routeAssignments?: { FO: RouteAssignment[]; DOC: RouteAssignment[]; UNLOAD: RouteAssignment[]; SORT: RouteAssignment[] };
+  routeAssignments?: { FO: RouteAssignment[]; DOC: RouteAssignment[]; UNLOAD: RouteAssignment[]; SORT: RouteAssignment[]; LATE_STARTER: RouteAssignment[] };
   onBeltSpotClick: (spot: BeltSpot, beltId: number) => void;
   onFacilitySpotClick: (spot: FacilitySpot, sectionName: string) => void;
   onBeltDoubleClick: (beltId: number) => void;
@@ -142,6 +143,11 @@ export function FacilityView({
         routes={routeAssignments?.FO || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'FO')}
         isManager={isManager}
+      />
+
+      {/* Late Starter Section */}
+      <LateStarterSection
+        routes={routeAssignments?.LATE_STARTER || []}
       />
 
       {/* BELTS Section */}

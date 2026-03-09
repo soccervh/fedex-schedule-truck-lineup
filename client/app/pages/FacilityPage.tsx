@@ -174,6 +174,10 @@ export default function FacilityPage() {
             <span>Sort</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-500"></div>
+            <span>Late Starter</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-swing"></div>
             <span>Swing</span>
           </div>

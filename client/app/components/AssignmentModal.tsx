@@ -260,6 +260,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                   <option value="SORT">Sort</option>
                   <option value="FO">FO</option>
                   <option value="PULLER">Puller</option>
+                  <option value="LATE_STARTER">Late Starter</option>
                 </select>
               </div>
             )}
@@ -419,7 +420,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             onClick={onClose}
             className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
           >
-            Done
+            Cancel
           </button>
         </div>
       </div>

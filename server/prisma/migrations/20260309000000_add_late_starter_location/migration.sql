@@ -1,0 +1,2 @@
+-- Add LATE_STARTER to LoadLocation enum
+ALTER TYPE "LoadLocation" ADD VALUE IF NOT EXISTS 'LATE_STARTER';

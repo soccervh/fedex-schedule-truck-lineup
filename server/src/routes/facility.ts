@@ -241,15 +241,18 @@ router.get('/route-assignments', authenticate, async (req, res) => {
 
     // Map loadLocation to section
     const SORT_LOCATIONS = new Set(['SORT', 'LABEL_FACER', 'SCANNER', 'SPLITTER']);
-    function getSection(loadLocation: string): string {
+    const EXCLUDED_LOCATIONS = new Set(['PULLER', 'UNASSIGNED']);
+    function getSection(loadLocation: string): string | null {
+      if (EXCLUDED_LOCATIONS.has(loadLocation)) return null;
       if (loadLocation === 'FO') return 'FO';
       if (loadLocation === 'DOC') return 'DOC';
       if (loadLocation === 'UNLOAD') return 'UNLOAD';
+      if (loadLocation === 'LATE_STARTER') return 'LATE_STARTER';
       if (SORT_LOCATIONS.has(loadLocation)) return 'SORT';
-      return 'SORT';
+      return null;
     }
 
-    const result: Record<string, any[]> = { FO: [], DOC: [], UNLOAD: [], SORT: [] };
+    const result: Record<string, any[]> = { FO: [], DOC: [], UNLOAD: [], SORT: [], LATE_STARTER: [] };
 
     for (const route of routes) {
       const beltAssignment = route.beltSpotId
@@ -269,6 +272,7 @@ router.get('/route-assignments', authenticate, async (req, res) => {
       }
 
       const section = getSection(route.loadLocation!);
+      if (!section) continue;
       result[section].push({
         id: route.id,
         number: route.number,

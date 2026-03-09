@@ -245,6 +245,7 @@ enum LoadLocation {
   SPLITTER
   FO
   PULLER
+  LATE_STARTER
 }
 
 model Route {
