@@ -330,21 +330,39 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
         },
         routes: {
           where: { isActive: true },
-          select: { id: true, number: true, loadLocation: true },
+          select: {
+            id: true, number: true, loadLocation: true,
+            driverId: true,
+            driver: { select: { id: true, name: true, role: true, workSchedule: true } },
+          },
           orderBy: { number: 'asc' },
         },
       },
       orderBy: [{ belt: { id: 'asc' } }, { number: 'asc' }],
     });
 
+    const dayOfWeek = targetDate.getUTCDay();
+    function isWorkDay(workSchedule: string, dow: number): boolean {
+      if (workSchedule === 'MON_FRI') return dow >= 1 && dow <= 5;
+      if (workSchedule === 'TUE_SAT') return dow >= 2 && dow <= 6;
+      return false;
+    }
+
     // Get all assignments for this date (for swing driver tracking)
     const assignments = allSpots.flatMap(s => s.assignments);
 
-    // Get approved time offs for assigned users
-    const userIds = assignments.map(a => a.userId);
+    // Collect all user IDs that might need time-off checks (assignments + route drivers)
+    const allUserIds = new Set<string>();
+    for (const a of assignments) allUserIds.add(a.userId);
+    for (const spot of allSpots) {
+      for (const route of spot.routes) {
+        if (route.driverId) allUserIds.add(route.driverId);
+      }
+    }
+
     const timeOffs = await prisma.timeOff.findMany({
       where: {
-        userId: { in: userIds },
+        userId: { in: [...allUserIds] },
         date: targetDate,
         status: 'APPROVED',
       },
@@ -352,27 +370,41 @@ router.get('/coverage-needs', authenticate, async (req, res) => {
 
     const timeOffUserIds = new Set(timeOffs.map(t => t.userId));
 
-    // Find spots needing coverage: unassigned OR assigned user is off
+    // Find spots needing coverage: unassigned OR assigned/permanent driver is off
     const needsCoverage: any[] = [];
     for (const spot of allSpots) {
       const assignment = spot.assignments[0];
       const route = spot.routes[0] || null;
-      if (!assignment) {
-        // Unassigned spot
+
+      if (assignment) {
+        // Explicit assignment exists — check if that user is off
+        if (timeOffUserIds.has(assignment.userId)) {
+          needsCoverage.push({
+            assignment,
+            spot: { id: spot.id, number: spot.number, belt: spot.belt },
+            route,
+            user: assignment.user,
+            reason: 'time_off',
+          });
+        }
+      } else if (route?.driver && isWorkDay(route.driver.workSchedule, dayOfWeek)) {
+        // No explicit assignment but permanent driver exists — check if off
+        if (timeOffUserIds.has(route.driver.id)) {
+          needsCoverage.push({
+            spot: { id: spot.id, number: spot.number, belt: spot.belt },
+            route,
+            user: route.driver,
+            reason: 'time_off',
+          });
+        }
+        // Permanent driver is working — NOT a coverage need
+      } else {
+        // No assignment and no permanent driver for today — unassigned
         needsCoverage.push({
           spot: { id: spot.id, number: spot.number, belt: spot.belt },
           route,
           user: { name: 'Unassigned' },
           reason: 'unassigned',
-        });
-      } else if (timeOffUserIds.has(assignment.userId)) {
-        // Assigned user is off
-        needsCoverage.push({
-          assignment,
-          spot: { id: spot.id, number: spot.number, belt: spot.belt },
-          route,
-          user: assignment.user,
-          reason: 'time_off',
         });
       }
     }
