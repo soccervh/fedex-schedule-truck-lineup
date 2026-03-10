@@ -241,7 +241,7 @@ export function SpotCardCompact({
         </div>
       )}
       {pulledRoutes && pulledRoutes.length > 0 && (
-        <div className="text-[10px] text-yellow-300 mt-0.5 truncate w-full">
+        <div className="text-[10px] text-black mt-0.5 truncate w-full">
           Pulls: {pulledRoutes.map(r => r.number).join(', ')}
         </div>
       )}
