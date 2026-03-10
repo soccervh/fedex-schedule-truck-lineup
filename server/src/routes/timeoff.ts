@@ -58,6 +58,44 @@ router.get('/mine', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// Get approved time off for a month (visible to all employees)
+router.get('/calendar', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { month } = req.query; // format: YYYY-MM
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'month parameter required (YYYY-MM)' });
+    }
+
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+
+    const timeOffs = await prisma.timeOff.findMany({
+      where: {
+        date: { gte: startDate, lt: endDate },
+        status: 'APPROVED',
+      },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: [{ date: 'asc' }, { user: { name: 'asc' } }],
+    });
+
+    // Group by date
+    const byDate: Record<string, { user: { id: string; name: string; role: string }; type: string }[]> = {};
+    for (const to of timeOffs) {
+      const dateStr = to.date.toISOString().split('T')[0];
+      if (!byDate[dateStr]) byDate[dateStr] = [];
+      byDate[dateStr].push({ user: to.user, type: to.type });
+    }
+
+    res.json(byDate);
+  } catch (error) {
+    console.error('Get calendar error:', error);
+    res.status(500).json({ error: 'Failed to get calendar data' });
+  }
+});
+
 // Get pending time off count (for OP_LEAD+ badge)
 router.get('/pending-count', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {

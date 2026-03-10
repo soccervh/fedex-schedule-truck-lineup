@@ -3,9 +3,14 @@ import { useQueryState } from 'nuqs';
 import { api } from '../lib/api';
 import { todayET, formatDateET } from '../lib/date';
 import { Check, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { TimeOffCalendar } from '../components/TimeOffCalendar';
 
 export default function TimeOff() {
   const queryClient = useQueryClient();
+  const { hasAccess } = useAuth();
+  const isManager = hasAccess('OP_LEAD');
+
   const [startDate, setStartDate] = useQueryState('from', {
     defaultValue: todayET(),
   });
@@ -28,6 +33,7 @@ export default function TimeOff() {
       });
       return res.data;
     },
+    enabled: isManager,
   });
 
   const updateMutation = useMutation({
@@ -36,6 +42,7 @@ export default function TimeOff() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeoffs'] });
+      queryClient.invalidateQueries({ queryKey: ['timeoff-calendar'] });
     },
   });
 
@@ -58,111 +65,121 @@ export default function TimeOff() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Time Off Requests</h1>
+      <h1 className="text-2xl font-bold">Time Off</h1>
 
-      <div className="flex flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">From:</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">To:</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md"
-        >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="DENIED">Denied</option>
-        </select>
-      </div>
+      {/* Calendar - visible to everyone */}
+      <TimeOffCalendar />
 
-      {isLoading ? (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Person
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {timeOffs?.map((to: any) => (
-                <tr key={to.id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">
-                    {to.user.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {new Date(to.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {typeLabels[to.type as keyof typeof typeLabels]}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[to.status as keyof typeof statusColors]}`}>
-                      {to.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    {to.status === 'PENDING' && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(to.id)}
-                          className="text-green-600 hover:text-green-800 mr-3"
-                          title="Approve"
-                        >
-                          <Check size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeny(to.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Deny"
-                        >
-                          <X size={18} />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {timeOffs?.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    No time off requests found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Manager request table - OP_LEAD+ only */}
+      {isManager && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Manage Requests</h2>
+
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">From:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">To:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+            >
+              <option value="">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="DENIED">Denied</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Person
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                  {timeOffs?.map((to: any) => (
+                    <tr key={to.id}>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium">
+                        {to.user.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
+                        {new Date(to.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {typeLabels[to.type as keyof typeof typeLabels]}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${statusColors[to.status as keyof typeof statusColors]}`}>
+                          {to.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {to.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(to.id)}
+                              className="text-green-600 hover:text-green-800 mr-3"
+                              title="Approve"
+                            >
+                              <Check size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeny(to.id)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Deny"
+                            >
+                              <X size={18} />
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {timeOffs?.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No time off requests found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
