@@ -208,15 +208,11 @@ router.post('/request', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Approve/deny time off (OP_LEAD+, scoped to assigned employees for OP_LEAD)
+// Update time off — status, type, note (OP_LEAD+)
 router.patch('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
-    const { status, note } = req.body;
-
-    if (!status || !['APPROVED', 'DENIED'].includes(status)) {
-      return res.status(400).json({ error: 'Valid status required' });
-    }
+    const { status, type, note } = req.body;
 
     const existing = await prisma.timeOff.findUnique({
       where: { id },
@@ -224,14 +220,19 @@ router.patch('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: Au
     });
     if (!existing) return res.status(404).json({ error: 'Time off not found' });
 
-    // OP_LEAD can only approve/deny for their assigned employees
+    // OP_LEAD can only manage their assigned employees
     if (req.user!.accessLevel === 'OP_LEAD' && existing.user.managerId !== req.user!.userId) {
-      return res.status(403).json({ error: 'You can only approve/deny time off for your assigned employees' });
+      return res.status(403).json({ error: 'You can only manage time off for your assigned employees' });
     }
+
+    const data: any = {};
+    if (status && ['APPROVED', 'DENIED', 'PENDING'].includes(status)) data.status = status;
+    if (type && ['VACATION_WEEK', 'VACATION_DAY', 'PERSONAL', 'HOLIDAY', 'SICK', 'SCHEDULED_OFF'].includes(type)) data.type = type;
+    if (note !== undefined) data.note = note;
 
     const timeOff = await prisma.timeOff.update({
       where: { id },
-      data: { status, note },
+      data,
       include: {
         user: { select: { id: true, name: true } },
       },
@@ -241,6 +242,30 @@ router.patch('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: Au
   } catch (error) {
     console.error('Update time off error:', error);
     res.status(500).json({ error: 'Failed to update time off' });
+  }
+});
+
+// Delete time off entry (OP_LEAD+)
+router.delete('/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+
+    const existing = await prisma.timeOff.findUnique({
+      where: { id },
+      include: { user: { select: { managerId: true, name: true } } },
+    });
+    if (!existing) return res.status(404).json({ error: 'Time off not found' });
+
+    if (req.user!.accessLevel === 'OP_LEAD' && existing.user.managerId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only delete time off for your assigned employees' });
+    }
+
+    await prisma.timeOff.delete({ where: { id } });
+
+    res.json({ message: 'Time off entry deleted' });
+  } catch (error) {
+    console.error('Delete time off error:', error);
+    res.status(500).json({ error: 'Failed to delete time off' });
   }
 });
 
