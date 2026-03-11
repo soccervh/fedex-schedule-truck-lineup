@@ -5,7 +5,8 @@ import { SortSection } from './SortSection';
 import { DocSection } from './DocSection';
 import { FOSection } from './FOSection';
 import { LateStarterSection } from './LateStarterSection';
-import { getStartTime } from '../utils/startTimes';
+import { getStartTime, DEFAULT_CONFIG } from '../utils/startTimes';
+import type { StartTimeConfig } from '../utils/startTimes';
 
 interface BeltSpot {
   id: number;
@@ -70,6 +71,7 @@ interface FacilityViewProps {
   onBeltDoubleClick: (beltId: number) => void;
   isManager: boolean;
   selectedDate: string;
+  startTimeConfig?: StartTimeConfig;
 }
 
 export function FacilityView({
@@ -81,7 +83,9 @@ export function FacilityView({
   onBeltDoubleClick,
   isManager,
   selectedDate,
+  startTimeConfig,
 }: FacilityViewProps) {
+  const config = startTimeConfig || DEFAULT_CONFIG;
   const [activeBeltTab, setActiveBeltTab] = useState(0);
 
   // Organize belts: D, C on left; B, A on right
@@ -117,7 +121,7 @@ export function FacilityView({
         routes={routeAssignments?.UNLOAD || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'UNLOAD')}
         isManager={isManager}
-        startTime={getStartTime('UNLOAD', selectedDate)}
+        startTime={getStartTime('UNLOAD', selectedDate, config)}
       />
 
       {/* SORT Section */}
@@ -127,7 +131,7 @@ export function FacilityView({
         routes={routeAssignments?.SORT || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'SORT')}
         isManager={isManager}
-        startTime={getStartTime('SORT', selectedDate)}
+        startTime={getStartTime('SORT', selectedDate, config)}
       />
 
       {/* DOC Section */}
@@ -140,8 +144,8 @@ export function FacilityView({
         routes={routeAssignments?.DOC || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'DOC')}
         isManager={isManager}
-        sortStartTime={getStartTime('DOC_SORT', selectedDate)}
-        rampStartTime={getStartTime('DOC_RAMP', selectedDate)}
+        sortStartTime={getStartTime('DOC_SORT', selectedDate, config)}
+        rampStartTime={getStartTime('DOC_RAMP', selectedDate, config)}
       />
 
       {/* FO Section */}
@@ -150,13 +154,13 @@ export function FacilityView({
         routes={routeAssignments?.FO || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'FO')}
         isManager={isManager}
-        startTime={getStartTime('FO', selectedDate)}
+        startTime={getStartTime('FO', selectedDate, config)}
       />
 
       {/* Late Starter Section */}
       <LateStarterSection
         routes={routeAssignments?.LATE_STARTER || []}
-        startTime={getStartTime('LATE_STARTER', selectedDate)}
+        startTime={getStartTime('LATE_STARTER', selectedDate, config)}
       />
 
       {/* BELTS Section */}

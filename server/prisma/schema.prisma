@@ -277,6 +277,14 @@ model DailyBriefing {
   updatedAt    DateTime @updatedAt
 }
 
+model StartTimeConfig {
+  id           Int      @id @default(1)
+  mondaySort   String   @default("06:00")
+  tueFriSort   String   @default("06:45")
+  saturdaySort String   @default("07:30")
+  updatedAt    DateTime @updatedAt
+}
+
 model InviteToken {
   id        String    @id @default(cuid())
   token     String    @unique

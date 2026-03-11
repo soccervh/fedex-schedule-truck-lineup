@@ -351,4 +351,41 @@ router.post('/assign-route-spot', authenticate, requireAccessLevel('OP_LEAD'), a
   }
 });
 
+// Get start time config
+router.get('/start-times', authenticate, async (req, res) => {
+  try {
+    let config = await prisma.startTimeConfig.findUnique({ where: { id: 1 } });
+    if (!config) {
+      config = await prisma.startTimeConfig.create({ data: { id: 1 } });
+    }
+    res.json(config);
+  } catch (error) {
+    console.error('Error fetching start time config:', error);
+    res.status(500).json({ error: 'Failed to fetch start time config' });
+  }
+});
+
+// Update start time config (OP_LEAD+)
+router.patch('/start-times', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
+  try {
+    const { mondaySort, tueFriSort, saturdaySort } = req.body;
+
+    const data: Record<string, string> = {};
+    if (mondaySort !== undefined) data.mondaySort = mondaySort;
+    if (tueFriSort !== undefined) data.tueFriSort = tueFriSort;
+    if (saturdaySort !== undefined) data.saturdaySort = saturdaySort;
+
+    const config = await prisma.startTimeConfig.upsert({
+      where: { id: 1 },
+      update: data,
+      create: { id: 1, ...data },
+    });
+
+    res.json(config);
+  } catch (error) {
+    console.error('Error updating start time config:', error);
+    res.status(500).json({ error: 'Failed to update start time config' });
+  }
+});
+
 export default router;

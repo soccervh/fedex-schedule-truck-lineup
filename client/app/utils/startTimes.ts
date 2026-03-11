@@ -1,46 +1,101 @@
-// Start time rules by area and day of week
+// Start time computation from editable sort times
 // dayOfWeek: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-export function getStartTime(area: string, dateStr: string): string | null {
+// Fixed offsets from sort time (in minutes) per day type
+const OFFSETS: Record<string, Record<string, number>> = {
+  TRUCK_MOVER: { mon: -60, tuefri: -60, sat: -60 },
+  DOC_SORT:    { mon: 30,  tuefri: 25,  sat: 0 },
+  SORT:        { mon: 0,   tuefri: 0,   sat: 0 },
+  UNLOAD:      { mon: 0,   tuefri: 0,   sat: 0 },
+  PULLER:      { mon: 0,   tuefri: 0,   sat: 0 },
+};
+
+// Fixed times that never change (HH:mm). 'SORT' means use sort time.
+const FIXED: Record<string, Record<string, string>> = {
+  FO:           { mon: '06:00', tuefri: '06:00', sat: 'SORT' },
+  LATE_STARTER: { mon: '08:00', tuefri: '08:00', sat: '08:00' },
+  DOC_RAMP:     { mon: '04:00', tuefri: '05:00', sat: 'SORT' },
+};
+
+export interface StartTimeConfig {
+  mondaySort: string;   // "HH:mm" format
+  tueFriSort: string;
+  saturdaySort: string;
+}
+
+export const DEFAULT_CONFIG: StartTimeConfig = {
+  mondaySort: '06:00',
+  tueFriSort: '06:45',
+  saturdaySort: '07:30',
+};
+
+function getDayType(dateStr: string): 'sun' | 'mon' | 'tuefri' | 'sat' {
   const date = new Date(dateStr + 'T12:00:00');
   const dow = date.getDay();
+  if (dow === 0) return 'sun';
+  if (dow === 1) return 'mon';
+  if (dow === 6) return 'sat';
+  return 'tuefri';
+}
 
-  // Sunday - no work
-  if (dow === 0) return null;
+function getSortTime(config: StartTimeConfig, dayType: string): string {
+  if (dayType === 'mon') return config.mondaySort;
+  if (dayType === 'sat') return config.saturdaySort;
+  return config.tueFriSort;
+}
 
-  // Saturday - everyone 7:30 AM except Late Starters 8:00 AM, Truck Movers 6:30 AM
-  if (dow === 6) {
-    if (area === 'LATE_STARTER') return '8:00 AM';
-    if (area === 'TRUCK_MOVER') return '6:30 AM';
-    return '7:30 AM';
+function addMinutes(timeStr: string, minutes: number): string {
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const newH = Math.floor(((total % 1440) + 1440) % 1440 / 60);
+  const newM = ((total % 1440) + 1440) % 1440 % 60;
+  return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+}
+
+function formatTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+export function getStartTime(
+  area: string,
+  dateStr: string,
+  config: StartTimeConfig = DEFAULT_CONFIG
+): string | null {
+  const dayType = getDayType(dateStr);
+  if (dayType === 'sun') return null;
+
+  const sortTime = getSortTime(config, dayType);
+
+  // Check fixed times first
+  const fixed = FIXED[area];
+  if (fixed) {
+    const value = fixed[dayType];
+    if (value === 'SORT') return formatTime(sortTime);
+    return formatTime(value);
   }
 
-  // Monday-Friday rules
-  switch (area) {
-    case 'FO':
-      return '6:00 AM';
-
-    case 'LATE_STARTER':
-      return '8:00 AM';
-
-    case 'TRUCK_MOVER':
-      // 1 hour before sort time
-      return dow === 1 ? '5:00 AM' : '5:45 AM';
-
-    case 'PULLER':
-    case 'SORT':
-    case 'UNLOAD':
-      return dow === 1 ? '6:00 AM' : '6:45 AM';
-
-    case 'DOC_SORT':
-      // Doc sort = Secondary, Fine Sort, Quarterback
-      return dow === 1 ? '6:30 AM' : '7:10 AM';
-
-    case 'DOC_RAMP':
-      // Ramp 1 & 2
-      return dow === 1 ? '4:00 AM' : '5:00 AM';
-
-    default:
-      return null;
+  // Check offset-based times
+  const offsets = OFFSETS[area];
+  if (offsets) {
+    const offset = offsets[dayType];
+    return formatTime(addMinutes(sortTime, offset));
   }
+
+  return null;
+}
+
+// Get all area times for preview in settings modal
+export function getAllStartTimes(
+  dateStr: string,
+  config: StartTimeConfig = DEFAULT_CONFIG
+): Record<string, string | null> {
+  const areas = ['SORT', 'UNLOAD', 'PULLER', 'TRUCK_MOVER', 'DOC_SORT', 'DOC_RAMP', 'FO', 'LATE_STARTER'];
+  const result: Record<string, string | null> = {};
+  for (const area of areas) {
+    result[area] = getStartTime(area, dateStr, config);
+  }
+  return result;
 }

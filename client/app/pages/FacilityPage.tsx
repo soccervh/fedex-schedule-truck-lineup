@@ -10,6 +10,8 @@ import { NeedsFillSidebar } from '../components/NeedsFillSidebar';
 import { SwingDriversSidebar } from '../components/SwingDriversSidebar';
 import { AssignmentModal } from '../components/AssignmentModal';
 import { FacilityAssignmentModal } from '../components/FacilityAssignmentModal';
+import { StartTimesModal } from '../components/StartTimesModal';
+import { Settings } from 'lucide-react';
 import type { Belt, BeltSpot, FacilityArea, FacilitySpot, SwingDriver, RouteAssignments } from '../types/lineup';
 
 export default function FacilityPage() {
@@ -20,6 +22,7 @@ export default function FacilityPage() {
   const [detailBeltId, setDetailBeltId] = useState<number | null>(null);
   const [selectedBeltSpot, setSelectedBeltSpot] = useState<{ spot: BeltSpot; beltId: number } | null>(null);
   const [selectedFacilitySpot, setSelectedFacilitySpot] = useState<{ spot: FacilitySpot; sectionName: string } | null>(null);
+  const [showStartTimesModal, setShowStartTimesModal] = useState(false);
 
   const { data: beltsData, isLoading: beltsLoading } = useQuery({
     queryKey: ['all-belts', selectedDate],
@@ -61,6 +64,14 @@ export default function FacilityPage() {
     },
     staleTime: 0,
     refetchOnMount: 'always',
+  });
+
+  const { data: startTimeConfig } = useQuery({
+    queryKey: ['start-time-config'],
+    queryFn: async () => {
+      const res = await api.get('/facility/start-times');
+      return res.data;
+    },
   });
 
   const handleBeltSpotClick = (spot: BeltSpot, beltId: number) => {
@@ -114,6 +125,15 @@ export default function FacilityPage() {
                 Return to Today
               </button>
             )}
+            {isManager && (
+              <button
+                onClick={() => setShowStartTimesModal(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="Edit Start Times"
+              >
+                <Settings size={20} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -143,6 +163,7 @@ export default function FacilityPage() {
                 onBeltDoubleClick={handleBeltDoubleClick}
                 isManager={isManager}
                 selectedDate={selectedDate}
+                startTimeConfig={startTimeConfig}
               />
             ) : null}
           </div>
@@ -225,6 +246,14 @@ export default function FacilityPage() {
           sectionName={selectedFacilitySpot.sectionName}
           routes={routeAssignmentsData?.[selectedFacilitySpot.sectionName as keyof RouteAssignments] || []}
           onClose={() => setSelectedFacilitySpot(null)}
+        />
+      )}
+
+      {showStartTimesModal && (
+        <StartTimesModal
+          selectedDate={selectedDate}
+          initialConfig={startTimeConfig}
+          onClose={() => setShowStartTimesModal(false)}
         />
       )}
     </div>
