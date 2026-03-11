@@ -351,7 +351,8 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
 
           {/* Person Assignment Section - optional */}
           <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Person Assignment (Optional)</span>
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Person Assignment (Today Only)</span>
+            <p className="text-xs text-gray-400 dark:text-gray-500">This assigns someone for today only. Use the People page to set a permanent route assignment.</p>
 
             {spot.assignment?.needsCoverage && (
               <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">

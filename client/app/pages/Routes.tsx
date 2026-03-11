@@ -80,6 +80,10 @@ export default function Routes() {
         </button>
       </div>
 
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        Assign permanent drivers on the <strong>People</strong> page. Routes configured here define schedule, area, and belt spot.
+      </p>
+
       <div className="flex gap-2 items-center">
         {['ALL', 'MON_FRI', 'TUE_FRI', 'SAT_ONLY'].map((filter) => (
           <button

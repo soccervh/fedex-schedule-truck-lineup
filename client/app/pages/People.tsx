@@ -259,8 +259,8 @@ export default function People() {
                 <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Role
                 </th>
-                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Route
+                <th className="px-2 sm:px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" title="Permanent route assignment — this person will show on this spot every workday">
+                  Route (Permanent)
                 </th>
                 <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Access Level
