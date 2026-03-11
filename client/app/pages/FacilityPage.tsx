@@ -142,6 +142,7 @@ export default function FacilityPage() {
                 onFacilitySpotClick={handleFacilitySpotClick}
                 onBeltDoubleClick={handleBeltDoubleClick}
                 isManager={isManager}
+                selectedDate={selectedDate}
               />
             ) : null}
           </div>

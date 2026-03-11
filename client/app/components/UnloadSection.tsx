@@ -34,6 +34,7 @@ interface UnloadSectionProps {
   onSpotClick: (spot: FacilitySpot) => void;
   isManager: boolean;
   defaultExpanded?: boolean;
+  startTime?: string | null;
 }
 
 function formatName(fullName: string): string {
@@ -101,6 +102,7 @@ export function UnloadSection({
   onSpotClick,
   isManager,
   defaultExpanded = true,
+  startTime,
 }: UnloadSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -127,7 +129,7 @@ export function UnloadSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-green-800 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        UNLOAD ({totalX}/{totalY})
+        UNLOAD ({totalX}/{totalY}){startTime && <span className="font-normal text-xs ml-2 opacity-75">Start: {startTime}</span>}
       </button>
       {expanded && (
         <div className="px-3 pb-3">

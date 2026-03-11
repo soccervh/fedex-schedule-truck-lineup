@@ -12,6 +12,7 @@ interface RouteAssignment {
 interface LateStarterSectionProps {
   routes?: RouteAssignment[];
   defaultExpanded?: boolean;
+  startTime?: string | null;
 }
 
 function formatName(fullName: string): string {
@@ -23,6 +24,7 @@ function formatName(fullName: string): string {
 export function LateStarterSection({
   routes = [],
   defaultExpanded = true,
+  startTime,
 }: LateStarterSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -35,7 +37,7 @@ export function LateStarterSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        LATE STARTER ({filled}/{routes.length})
+        LATE STARTER ({filled}/{routes.length}){startTime && <span className="font-normal text-xs ml-2 opacity-75">Start: {startTime}</span>}
       </button>
       {expanded && routes.length > 0 && (
         <div className="px-3 pb-3">

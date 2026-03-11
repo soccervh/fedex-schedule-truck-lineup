@@ -36,6 +36,8 @@ interface DocSectionProps {
   onSpotClick: (spot: FacilitySpot) => void;
   isManager: boolean;
   defaultExpanded?: boolean;
+  sortStartTime?: string | null;
+  rampStartTime?: string | null;
 }
 
 function formatName(fullName: string): string {
@@ -106,6 +108,8 @@ export function DocSection({
   onSpotClick,
   isManager,
   defaultExpanded = true,
+  sortStartTime,
+  rampStartTime,
 }: DocSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const allDocSpots = [...secondarySpots, ...quarterbackUpperSpots, ...fineSortSpots, ...quarterbackLowerSpots, ...rampSpots];
@@ -131,7 +135,7 @@ export function DocSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-orange-800 dark:text-orange-200 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        DOC ({totalX}/{totalY})
+        DOC ({totalX}/{totalY}){sortStartTime && <span className="font-normal text-xs ml-2 opacity-75">Sort: {sortStartTime}</span>}{rampStartTime && <span className="font-normal text-xs ml-2 opacity-75">Ramp: {rampStartTime}</span>}
       </button>
       {expanded && (
         <div className="px-3 pb-3 space-y-2">

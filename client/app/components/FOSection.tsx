@@ -32,6 +32,7 @@ interface FOSectionProps {
   onSpotClick: (spot: FOSpot) => void;
   isManager: boolean;
   defaultExpanded?: boolean;
+  startTime?: string | null;
 }
 
 function formatName(fullName: string): string {
@@ -98,6 +99,7 @@ export function FOSection({
   onSpotClick,
   isManager,
   defaultExpanded = true,
+  startTime,
 }: FOSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const sortedSpots = [...spots].sort((a, b) => a.number - b.number);
@@ -124,7 +126,7 @@ export function FOSection({
         className="w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-sm"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        FO ({totalX}/{totalY})
+        FO ({totalX}/{totalY}){startTime && <span className="font-normal text-xs ml-2 opacity-75">Start: {startTime}</span>}
       </button>
       {expanded && (
         <div className="px-3 pb-3 space-y-2">

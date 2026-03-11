@@ -5,6 +5,7 @@ import { SortSection } from './SortSection';
 import { DocSection } from './DocSection';
 import { FOSection } from './FOSection';
 import { LateStarterSection } from './LateStarterSection';
+import { getStartTime } from '../utils/startTimes';
 
 interface BeltSpot {
   id: number;
@@ -68,6 +69,7 @@ interface FacilityViewProps {
   onFacilitySpotClick: (spot: FacilitySpot, sectionName: string) => void;
   onBeltDoubleClick: (beltId: number) => void;
   isManager: boolean;
+  selectedDate: string;
 }
 
 export function FacilityView({
@@ -78,6 +80,7 @@ export function FacilityView({
   onFacilitySpotClick,
   onBeltDoubleClick,
   isManager,
+  selectedDate,
 }: FacilityViewProps) {
   const [activeBeltTab, setActiveBeltTab] = useState(0);
 
@@ -114,6 +117,7 @@ export function FacilityView({
         routes={routeAssignments?.UNLOAD || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'UNLOAD')}
         isManager={isManager}
+        startTime={getStartTime('UNLOAD', selectedDate)}
       />
 
       {/* SORT Section */}
@@ -123,6 +127,7 @@ export function FacilityView({
         routes={routeAssignments?.SORT || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'SORT')}
         isManager={isManager}
+        startTime={getStartTime('SORT', selectedDate)}
       />
 
       {/* DOC Section */}
@@ -135,6 +140,8 @@ export function FacilityView({
         routes={routeAssignments?.DOC || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'DOC')}
         isManager={isManager}
+        sortStartTime={getStartTime('DOC_SORT', selectedDate)}
+        rampStartTime={getStartTime('DOC_RAMP', selectedDate)}
       />
 
       {/* FO Section */}
@@ -143,11 +150,13 @@ export function FacilityView({
         routes={routeAssignments?.FO || []}
         onSpotClick={(spot) => onFacilitySpotClick(spot, 'FO')}
         isManager={isManager}
+        startTime={getStartTime('FO', selectedDate)}
       />
 
       {/* Late Starter Section */}
       <LateStarterSection
         routes={routeAssignments?.LATE_STARTER || []}
+        startTime={getStartTime('LATE_STARTER', selectedDate)}
       />
 
       {/* BELTS Section */}
