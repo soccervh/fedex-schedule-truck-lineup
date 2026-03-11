@@ -167,6 +167,25 @@ router.post('/apply-template', authenticate, requireAccessLevel('OP_LEAD'), asyn
 });
 
 // Get user's assignments (for driver view)
+// Get current user's permanent route (for area/start time)
+router.get('/my-route', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const route = await prisma.route.findFirst({
+      where: { driverId: req.user!.userId, isActive: true },
+      select: {
+        id: true,
+        number: true,
+        loadLocation: true,
+        assignedArea: true,
+      },
+    });
+    res.json(route);
+  } catch (error) {
+    console.error('Get my route error:', error);
+    res.status(500).json({ error: 'Failed to get route' });
+  }
+});
+
 router.get('/my-assignments', authenticate, async (req: AuthRequest, res) => {
   try {
     const { startDate, endDate } = req.query;

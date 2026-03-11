@@ -87,6 +87,24 @@ export function getStartTime(
   return null;
 }
 
+// Map a route's loadLocation to the start time area key
+export function loadLocationToArea(loadLocation: string | null, isTruckMover?: boolean): string | null {
+  if (isTruckMover) return 'TRUCK_MOVER';
+  if (!loadLocation) return null;
+  switch (loadLocation) {
+    case 'FO': return 'FO';
+    case 'DOC': return 'DOC_SORT';
+    case 'UNLOAD': return 'UNLOAD';
+    case 'SORT':
+    case 'LABEL_FACER':
+    case 'SCANNER':
+    case 'SPLITTER': return 'SORT';
+    case 'PULLER': return 'PULLER';
+    case 'LATE_STARTER': return 'LATE_STARTER';
+    default: return null;
+  }
+}
+
 // Get all area times for preview in settings modal
 export function getAllStartTimes(
   dateStr: string,

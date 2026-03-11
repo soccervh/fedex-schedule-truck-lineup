@@ -4,6 +4,8 @@ import { api } from '../lib/api';
 import { todayET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
 import { Pencil, Check, X } from 'lucide-react';
+import { getStartTime, loadLocationToArea, DEFAULT_CONFIG } from '../utils/startTimes';
+import type { StartTimeConfig } from '../utils/startTimes';
 
 interface Briefing {
   date: string;
@@ -13,7 +15,7 @@ interface Briefing {
 }
 
 export default function HomePage() {
-  const { isManager } = useAuth();
+  const { isManager, accessLevel } = useAuth();
   const queryClient = useQueryClient();
   const today = todayET();
 
@@ -27,6 +29,27 @@ export default function HomePage() {
       return res.data as Briefing;
     },
   });
+
+  const { data: startTimeConfig } = useQuery({
+    queryKey: ['start-time-config'],
+    queryFn: async () => {
+      const res = await api.get('/facility/start-times');
+      return res.data as StartTimeConfig;
+    },
+  });
+
+  const { data: myRoute } = useQuery({
+    queryKey: ['my-route'],
+    queryFn: async () => {
+      const res = await api.get('/assignments/my-route');
+      return res.data;
+    },
+  });
+
+  const config = startTimeConfig || DEFAULT_CONFIG;
+  const sortTime = getStartTime('SORT', today, config);
+  const myArea = loadLocationToArea(myRoute?.loadLocation, accessLevel === 'TRUCK_MOVER');
+  const myStartTime = myArea ? getStartTime(myArea, today, config) : null;
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<Briefing> & { date: string }) => {
@@ -109,9 +132,33 @@ export default function HomePage() {
     </div>
   );
 
+  const AREA_DISPLAY_NAMES: Record<string, string> = {
+    SORT: 'Sort', UNLOAD: 'Unload', PULLER: 'Puller', FO: 'FO',
+    DOC_SORT: 'Doc Sort', DOC_RAMP: 'Doc Ramp', LATE_STARTER: 'Late Starter',
+    TRUCK_MOVER: 'Truck Mover',
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Daily Briefing</h1>
+      <h1 className="text-2xl font-bold dark:text-white">Daily Briefing</h1>
+
+      {/* Start Times */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Sort Start Time</h3>
+          <p className={`text-2xl font-semibold ${sortTime ? 'text-gray-900 dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}>
+            {sortTime || 'No work today'}
+          </p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+            Your Start Time{myArea ? ` (${AREA_DISPLAY_NAMES[myArea] || myArea})` : ''}
+          </h3>
+          <p className={`text-2xl font-semibold ${myStartTime ? 'text-blue-600 dark:text-blue-400' : 'text-gray-300 dark:text-gray-600'}`}>
+            {myStartTime || (myRoute ? 'No work today' : 'No route assigned')}
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {renderField('Start Time', 'startTime', briefing?.startTime ?? null)}

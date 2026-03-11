@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { formatDateET } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
+import { getStartTime, loadLocationToArea, DEFAULT_CONFIG } from '../utils/startTimes';
+import type { StartTimeConfig } from '../utils/startTimes';
 
 export default function MySchedule() {
-  useAuth(); // Ensure user is authenticated
+  const { accessLevel } = useAuth();
   const queryClient = useQueryClient();
 
   const today = new Date();
@@ -39,6 +41,25 @@ export default function MySchedule() {
       return res.data;
     },
   });
+
+  const { data: startTimeConfig } = useQuery({
+    queryKey: ['start-time-config'],
+    queryFn: async () => {
+      const res = await api.get('/facility/start-times');
+      return res.data as StartTimeConfig;
+    },
+  });
+
+  const { data: myRoute } = useQuery({
+    queryKey: ['my-route'],
+    queryFn: async () => {
+      const res = await api.get('/assignments/my-route');
+      return res.data;
+    },
+  });
+
+  const config = startTimeConfig || DEFAULT_CONFIG;
+  const myArea = loadLocationToArea(myRoute?.loadLocation, accessLevel === 'TRUCK_MOVER');
 
   const requestMutation = useMutation({
     mutationFn: async (data: { dates: string[]; type: string; startDate?: string }) => {
@@ -75,50 +96,60 @@ export default function MySchedule() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Today's Assignment</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold dark:text-white mb-4">Today's Assignment</h2>
         {todayAssignment ? (
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-900">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
               Belt {todayAssignment.spot.belt.id} - Spot {todayAssignment.spot.number}
             </div>
-            <div className="text-lg text-blue-700 mt-1">
+            <div className="text-lg text-blue-700 dark:text-blue-300 mt-1">
               Truck: {todayAssignment.truckNumber}
             </div>
+            {myArea && (
+              <div className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                Start Time: {getStartTime(myArea, formatDateET(today), config) || 'N/A'}
+              </div>
+            )}
           </div>
         ) : (
-          <p className="text-gray-500">No assignment for today</p>
+          <p className="text-gray-500 dark:text-gray-400">No assignment for today</p>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">This Week</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold dark:text-white mb-4">This Week</h2>
         <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 7 }, (_, i) => {
             const date = new Date(weekStart);
             date.setDate(weekStart.getDate() + i);
+            const dateStr = formatDateET(date);
             const assignment = assignments?.find(
               (a: any) => new Date(a.date).toDateString() === date.toDateString()
             );
             const isToday = date.toDateString() === today.toDateString();
+            const dayStartTime = myArea ? getStartTime(myArea, dateStr, config) : null;
 
             return (
               <div
                 key={i}
                 className={`p-3 rounded-lg border text-center ${
-                  isToday ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  isToday ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400' : 'border-gray-200 dark:border-gray-600'
                 }`}
               >
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {date.toLocaleDateString('en-US', { weekday: 'short' })}
                 </div>
-                <div className="font-medium">{date.getDate()}</div>
+                <div className="font-medium dark:text-white">{date.getDate()}</div>
                 {assignment ? (
-                  <div className="text-xs mt-1">
+                  <div className="text-xs mt-1 dark:text-gray-300">
                     B{assignment.spot.belt.id}-S{assignment.spot.number}
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-400 mt-1">-</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">-</div>
+                )}
+                {dayStartTime && (
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{dayStartTime}</div>
                 )}
               </div>
             );
