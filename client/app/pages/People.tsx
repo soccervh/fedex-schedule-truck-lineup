@@ -49,7 +49,7 @@ export default function People() {
     queryKey: ['driver-routes'],
     queryFn: async () => {
       const res = await api.get('/people/driver-routes');
-      return res.data as Record<string, { routeId: number; routeNumber: string; spotId: number; beltLetter: string; spotNumber: number }>;
+      return res.data as Record<string, { weekday?: { routeId: number; routeNumber: string; schedule: string }; saturday?: { routeId: number; routeNumber: string; schedule: string } }>;
     },
   });
 
@@ -127,8 +127,8 @@ export default function People() {
   });
 
   const unassignRouteMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      return api.post('/people/unassign-route', { userId });
+    mutationFn: async ({ userId, schedule }: { userId: string; schedule?: string }) => {
+      return api.post('/people/unassign-route', { userId, schedule });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
@@ -142,18 +142,17 @@ export default function People() {
   const routeDriverMap: Record<number, string> = {};
   if (driverRoutes && people) {
     for (const [userId, info] of Object.entries(driverRoutes)) {
-      if (info.routeId) {
-        const person = people.find((p: any) => p.id === userId);
-        if (person) {
-          routeDriverMap[info.routeId] = person.name.split(' ')[0]; // First name
-        }
+      const person = people.find((p: any) => p.id === userId);
+      if (person) {
+        if (info.weekday?.routeId) routeDriverMap[info.weekday.routeId] = person.name.split(' ')[0];
+        if (info.saturday?.routeId) routeDriverMap[info.saturday.routeId] = person.name.split(' ')[0];
       }
     }
   }
 
-  const handleRouteChange = (person: any, value: string) => {
+  const handleRouteChange = (person: any, value: string, scheduleType?: 'WEEKDAY' | 'SAT_ONLY') => {
     if (value === '') {
-      unassignRouteMutation.mutate(person.id);
+      unassignRouteMutation.mutate({ userId: person.id, schedule: scheduleType });
     } else {
       const routeId = parseInt(value);
       assignRouteMutation.mutate({ userId: person.id, routeId });
@@ -308,32 +307,65 @@ export default function People() {
                   <td className="px-2 sm:px-3 py-3 whitespace-nowrap">
                     {['DRIVER', 'SWING'].includes(person.role) ? (
                       canViewDetails ? (
-                        <select
-                          value={driverRoutes?.[person.id]?.routeId ?? ''}
-                          onChange={(e) => handleRouteChange(person, e.target.value)}
-                          className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-white max-w-[90px] sm:max-w-none"
-                          disabled={assignRouteMutation.isPending || unassignRouteMutation.isPending}
-                        >
-                          <option value="">— None —</option>
-                          {allRoutes
-                            ?.filter((r: any) => r.beltSpotId)
-                            .map((r: any) => {
-                              const driver = routeDriverMap[r.id];
-                              const isCurrent = driverRoutes?.[person.id]?.routeId === r.id;
-                              const label = driver && !isCurrent ? `R:${r.number} (${driver})` : `R:${r.number}`;
-                              return (
-                                <option key={r.id} value={r.id}>
-                                  {label}
-                                </option>
-                              );
-                            })}
-                        </select>
+                        <div className="flex flex-col gap-1">
+                          {/* Weekday route dropdown */}
+                          <select
+                            value={driverRoutes?.[person.id]?.weekday?.routeId ?? ''}
+                            onChange={(e) => handleRouteChange(person, e.target.value, 'WEEKDAY')}
+                            className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-white max-w-[90px] sm:max-w-none"
+                            disabled={assignRouteMutation.isPending || unassignRouteMutation.isPending}
+                          >
+                            <option value="">{person.workSchedule === 'TUE_SAT' ? '— Weekday —' : '— None —'}</option>
+                            {allRoutes
+                              ?.filter((r: any) => r.beltSpotId && r.schedule !== 'SAT_ONLY')
+                              .map((r: any) => {
+                                const driver = routeDriverMap[r.id];
+                                const isCurrent = driverRoutes?.[person.id]?.weekday?.routeId === r.id;
+                                const label = driver && !isCurrent ? `R:${r.number} (${driver})` : `R:${r.number}`;
+                                return (
+                                  <option key={r.id} value={r.id}>
+                                    {label}
+                                  </option>
+                                );
+                              })}
+                          </select>
+                          {/* Saturday route dropdown — only for TUE_SAT workers */}
+                          {person.workSchedule === 'TUE_SAT' && (
+                            <select
+                              value={driverRoutes?.[person.id]?.saturday?.routeId ?? ''}
+                              onChange={(e) => handleRouteChange(person, e.target.value, 'SAT_ONLY')}
+                              className="px-1 sm:px-2 py-1 text-xs sm:text-sm border rounded-md bg-white dark:bg-gray-700 dark:border-gray-500 dark:text-white max-w-[90px] sm:max-w-none"
+                              disabled={assignRouteMutation.isPending || unassignRouteMutation.isPending}
+                            >
+                              <option value="">— Saturday —</option>
+                              {allRoutes
+                                ?.filter((r: any) => r.beltSpotId && r.schedule === 'SAT_ONLY')
+                                .map((r: any) => {
+                                  const driver = routeDriverMap[r.id];
+                                  const isCurrent = driverRoutes?.[person.id]?.saturday?.routeId === r.id;
+                                  const label = driver && !isCurrent ? `R:${r.number} (${driver})` : `R:${r.number}`;
+                                  return (
+                                    <option key={r.id} value={r.id}>
+                                      {label}
+                                    </option>
+                                  );
+                                })}
+                            </select>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {driverRoutes?.[person.id]?.routeNumber
-                            ? `R:${driverRoutes[person.id].routeNumber}`
-                            : '—'}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {driverRoutes?.[person.id]?.weekday?.routeNumber
+                              ? `R:${driverRoutes[person.id].weekday!.routeNumber}`
+                              : '—'}
+                          </span>
+                          {person.workSchedule === 'TUE_SAT' && driverRoutes?.[person.id]?.saturday?.routeNumber && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Sat: R:{driverRoutes[person.id].saturday!.routeNumber}
+                            </span>
+                          )}
+                        </div>
                       )
                     ) : (
                       <span className="text-gray-400 dark:text-gray-500">—</span>

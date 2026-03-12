@@ -14,7 +14,7 @@ const OFFSETS: Record<string, Record<string, number>> = {
 const FIXED: Record<string, Record<string, string>> = {
   FO:           { mon: '06:00', tuefri: '06:00', sat: 'SORT' },
   LATE_STARTER: { mon: '08:00', tuefri: '08:00', sat: '08:00' },
-  DOC_RAMP:     { mon: '04:00', tuefri: '05:00', sat: 'SORT' },
+  DOC_RAMP:     { mon: '04:00', tuefri: '05:00', sat: '05:30' },
 };
 
 export interface StartTimeConfig {

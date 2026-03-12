@@ -55,6 +55,13 @@ async function main() {
         { number: 2, label: 'S2' },
       ],
     },
+    {
+      name: 'DOC', subArea: 'SAT-Ramp', schedule: 'SATURDAY',
+      spots: [
+        { number: 1, label: 'Ramp1' },
+        { number: 2, label: 'Ramp2' },
+      ],
+    },
   ];
 
   for (const areaDef of satAreas) {

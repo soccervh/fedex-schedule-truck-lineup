@@ -22,6 +22,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         name: true,
         email: isHighAccess ? true : false,
         role: true,
+        workSchedule: true,
         phone: isHighAccess ? true : false,
         accessLevel: isHighAccess ? true : false,
         isSuspended: isHighAccess ? true : false,
@@ -39,6 +40,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // Get driver routes — based on permanent route.driverId assignments
+// Returns { userId: { weekday: {...}, saturday: {...} } }
 router.get('/driver-routes', authenticate, async (req, res) => {
   try {
     const routes = await prisma.route.findMany({
@@ -59,13 +61,22 @@ router.get('/driver-routes', authenticate, async (req, res) => {
     const result: Record<string, any> = {};
     for (const route of routes) {
       if (route.driverId && route.beltSpot) {
-        result[route.driverId] = {
+        if (!result[route.driverId]) {
+          result[route.driverId] = {};
+        }
+        const routeInfo = {
           routeId: route.id,
           routeNumber: route.number,
           spotId: route.beltSpotId,
           beltLetter: route.beltSpot.belt.letter,
           spotNumber: route.beltSpot.number,
+          schedule: route.schedule,
         };
+        if (route.schedule === 'SAT_ONLY') {
+          result[route.driverId].saturday = routeInfo;
+        } else {
+          result[route.driverId].weekday = routeInfo;
+        }
       }
     }
 
@@ -93,13 +104,18 @@ router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async 
       return res.status(400).json({ error: 'Route not found or inactive' });
     }
 
-    // Check if another route already has this driver
+    // Only clear routes of the same schedule type (weekday vs Saturday)
+    const isSatRoute = route.schedule === 'SAT_ONLY';
     const existingRoute = await prisma.route.findFirst({
-      where: { driverId: userId, isActive: true, id: { not: routeId } },
+      where: {
+        driverId: userId,
+        isActive: true,
+        id: { not: routeId },
+        schedule: isSatRoute ? 'SAT_ONLY' : { not: 'SAT_ONLY' },
+      },
     });
 
     if (existingRoute) {
-      // Clear driver from old route
       await prisma.route.update({
         where: { id: existingRoute.id },
         data: { driverId: null },
@@ -122,14 +138,21 @@ router.post('/assign-route', authenticate, requireAccessLevel('OP_LEAD'), async 
 // Unassign a driver from their route
 router.post('/unassign-route', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, schedule } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
+    const where: any = { driverId: userId, isActive: true };
+    if (schedule === 'SAT_ONLY') {
+      where.schedule = 'SAT_ONLY';
+    } else if (schedule === 'WEEKDAY') {
+      where.schedule = { not: 'SAT_ONLY' };
+    }
+
     await prisma.route.updateMany({
-      where: { driverId: userId, isActive: true },
+      where,
       data: { driverId: null },
     });
 

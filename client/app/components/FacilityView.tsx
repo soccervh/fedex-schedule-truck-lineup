@@ -113,7 +113,9 @@ export function FacilityView({
     : facilityAreas['DOC-Fine Sort']?.spots || [];
   const qbLowerAll = isSaturday ? [] : facilityAreas['DOC-Quarterback Lower']?.spots || [];
   const qbLower = qbLowerAll.filter(s => s.label === 'QB3');
-  const ramps = qbLowerAll.filter(s => s.label?.startsWith('Ramp'));
+  const ramps = isSaturday
+    ? facilityAreas['DOC-SAT-Ramp']?.spots || []
+    : qbLowerAll.filter(s => s.label?.startsWith('Ramp'));
   const sortDC = isSaturday ? [] : facilityAreas['SORT-D/C Side']?.spots || [];
   const sortBA = isSaturday
     ? facilityAreas['SORT-Saturday']?.spots || []

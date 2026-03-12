@@ -51,11 +51,13 @@ function DocSpotCard({
   mappedRoutes,
   onClick,
   isManager,
+  isRamp,
 }: {
   spot: FacilitySpot;
   mappedRoutes: RouteAssignment[];
   onClick: () => void;
   isManager: boolean;
+  isRamp?: boolean;
 }) {
   const hasRouteDriver = mappedRoutes.some(r => r.driver && !r.driverIsOff);
   const isSwing = spot.assignment?.user.role === 'SWING' || mappedRoutes.some(r => r.driver && !r.driverIsOff && r.driver.role === 'SWING');
@@ -75,7 +77,11 @@ function DocSpotCard({
         isManager ? 'cursor-pointer' : 'cursor-default'
       }`}
     >
-      <div className="text-xs font-medium">{spot.label || spot.number}</div>
+      <div className="text-xs font-medium">
+        {isRamp && mappedRoutes.length > 0
+          ? `R:${mappedRoutes[0].number}`
+          : (spot.label || spot.number)}
+      </div>
       {spot.assignment ? (
         <>
           <div className={`font-semibold truncate text-xs text-center w-full ${spot.assignment.needsCoverage ? 'line-through opacity-60' : ''}`}>
@@ -91,7 +97,7 @@ function DocSpotCard({
       {mappedRoutes.map(route => (
         <div key={route.id} className="text-[10px] truncate w-full text-center leading-tight">
           {route.driver && !route.driverIsOff && <div>{formatName(route.driver.name)}</div>}
-          <div>R:{route.number}</div>
+          {!isRamp && <div>R:{route.number}</div>}
         </div>
       ))}
     </button>
@@ -177,7 +183,7 @@ export function DocSection({
                 <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
               ))}
               {rampSpots.map((spot) => (
-                <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} />
+                <DocSpotCard key={spot.id} spot={spot} mappedRoutes={routesBySpotId.get(spot.id) || []} onClick={() => onSpotClick(spot)} isManager={isManager} isRamp />
               ))}
             </div>
           </div>
