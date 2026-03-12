@@ -101,41 +101,41 @@ async function main() {
     return;
   }
 
-  // A belt gets even routes: 502, 504, 506... (15 spots)
-  const evenRoutes = [];
-  for (let n = 502; n <= 530; n += 2) evenRoutes.push(String(n));
-
-  // B belt gets odd routes: 501, 503, 505... (15 spots)
+  // A belt gets odd routes: 501, 503, 505... (15 spots)
   const oddRoutes = [];
   for (let n = 501; n <= 529; n += 2) oddRoutes.push(String(n));
+
+  // B belt gets even routes: 502, 504, 506... (15 spots)
+  const evenRoutes = [];
+  for (let n = 502; n <= 530; n += 2) evenRoutes.push(String(n));
 
   let assigned = 0;
 
   for (let i = 0; i < 15; i++) {
-    // A belt - spot i+1 gets even route
+    // A belt - spot i+1 gets odd route
     const aSpot = beltA.spots.find(s => s.number === i + 1);
-    if (aSpot && evenRoutes[i]) {
-      const route = await prisma.route.findUnique({ where: { number: evenRoutes[i] } });
+    if (aSpot && oddRoutes[i]) {
+      const route = await prisma.route.findUnique({ where: { number: oddRoutes[i] } });
       if (route) {
         await prisma.route.update({
           where: { id: route.id },
           data: { beltSpotId: aSpot.id, assignedArea: 'BELT_SPOT' },
         });
-        console.log(`A${i + 1} → R:${evenRoutes[i]}`);
+        console.log(`A${i + 1} → R:${oddRoutes[i]}`);
         assigned++;
       }
     }
 
-    // B belt - spot i+1 gets odd route
+    // B belt - spot i+1 gets even route
     const bSpot = beltB.spots.find(s => s.number === i + 1);
-    if (bSpot && oddRoutes[i]) {
-      const route = await prisma.route.findUnique({ where: { number: oddRoutes[i] } });
+    if (bSpot && evenRoutes[i]) {
+      const route = await prisma.route.findUnique({ where: { number: evenRoutes[i] } });
       if (route) {
         await prisma.route.update({
           where: { id: route.id },
           data: { beltSpotId: bSpot.id, assignedArea: 'BELT_SPOT' },
         });
-        console.log(`B${i + 1} → R:${oddRoutes[i]}`);
+        console.log(`B${i + 1} → R:${evenRoutes[i]}`);
         assigned++;
       }
     }
