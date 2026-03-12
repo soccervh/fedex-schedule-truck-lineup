@@ -88,27 +88,39 @@ export function FacilityView({
   const config = startTimeConfig || DEFAULT_CONFIG;
   const [activeBeltTab, setActiveBeltTab] = useState(0);
 
-  // Organize belts: D, C on left; B, A on right
-  const leftBelts = belts.filter(b => b.letter === 'D' || b.letter === 'C')
-    .sort((a, b) => b.baseNumber - a.baseNumber); // D first, then C
-  const rightBelts = belts.filter(b => b.letter === 'B' || b.letter === 'A')
-    .sort((a, b) => b.baseNumber - a.baseNumber); // B first, then A
+  // Detect Saturday
+  const isSaturday = new Date(selectedDate + 'T12:00:00').getDay() === 6;
 
-  // All belts in tab order: D, C, B, A
+  // Organize belts based on day
+  const leftBelts = isSaturday ? [] : belts.filter(b => b.letter === 'D' || b.letter === 'C')
+    .sort((a, b) => b.baseNumber - a.baseNumber);
+  const rightBelts = belts.filter(b => b.letter === 'B' || b.letter === 'A')
+    .sort((a, b) => b.baseNumber - a.baseNumber);
+
   const allBelts = [...leftBelts, ...rightBelts];
 
-  // Get facility areas
-  const unloadDC = facilityAreas['UNLOAD-D/C Side']?.spots || [];
-  const unloadBA = facilityAreas['UNLOAD-B/A Side']?.spots || [];
-  const secondary = facilityAreas['DOC-Secondary']?.spots || [];
-  const qbUpper = facilityAreas['DOC-Quarterback Upper']?.spots || [];
-  const fineSort = facilityAreas['DOC-Fine Sort']?.spots || [];
-  const qbLowerAll = facilityAreas['DOC-Quarterback Lower']?.spots || [];
+  // Get facility areas — keys differ between weekday and Saturday
+  const unloadDC = isSaturday ? [] : facilityAreas['UNLOAD-D/C Side']?.spots || [];
+  const unloadBA = isSaturday
+    ? facilityAreas['UNLOAD-Saturday']?.spots || []
+    : facilityAreas['UNLOAD-B/A Side']?.spots || [];
+  const secondary = isSaturday
+    ? facilityAreas['DOC-SAT-Secondary']?.spots || []
+    : facilityAreas['DOC-Secondary']?.spots || [];
+  const qbUpper = isSaturday ? [] : facilityAreas['DOC-Quarterback Upper']?.spots || [];
+  const fineSort = isSaturday
+    ? facilityAreas['DOC-SAT-Fine Sort']?.spots || []
+    : facilityAreas['DOC-Fine Sort']?.spots || [];
+  const qbLowerAll = isSaturday ? [] : facilityAreas['DOC-Quarterback Lower']?.spots || [];
   const qbLower = qbLowerAll.filter(s => s.label === 'QB3');
   const ramps = qbLowerAll.filter(s => s.label?.startsWith('Ramp'));
-  const sortDC = facilityAreas['SORT-D/C Side']?.spots || [];
-  const sortBA = facilityAreas['SORT-B/A Side']?.spots || [];
-  const foSpots = facilityAreas['FO-default']?.spots || [];
+  const sortDC = isSaturday ? [] : facilityAreas['SORT-D/C Side']?.spots || [];
+  const sortBA = isSaturday
+    ? facilityAreas['SORT-Saturday']?.spots || []
+    : facilityAreas['SORT-B/A Side']?.spots || [];
+  const foSpots = isSaturday
+    ? facilityAreas['FO-Saturday']?.spots || []
+    : facilityAreas['FO-default']?.spots || [];
 
   const selectedBelt = allBelts[activeBeltTab];
 
@@ -157,19 +169,21 @@ export function FacilityView({
         startTime={getStartTime('FO', selectedDate, config)}
       />
 
-      {/* Late Starter Section */}
-      <LateStarterSection
-        routes={routeAssignments?.LATE_STARTER || []}
-        startTime={getStartTime('LATE_STARTER', selectedDate, config)}
-      />
+      {/* Late Starter Section - weekday only */}
+      {!isSaturday && (
+        <LateStarterSection
+          routes={routeAssignments?.LATE_STARTER || []}
+          startTime={getStartTime('LATE_STARTER', selectedDate, config)}
+        />
+      )}
 
       {/* BELTS Section */}
       <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shrink-0">
         <div className="text-center font-semibold text-gray-800 dark:text-gray-100 mb-3">BELTS</div>
 
-        {/* Desktop: show all belts side-by-side */}
+        {/* Desktop: show belts side-by-side */}
         <div className="hidden md:block">
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">WEST</div>
+          {!isSaturday && <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">WEST</div>}
           <div className="flex gap-2 justify-center overflow-x-auto pb-4">
             {leftBelts.map((belt) => (
               <BeltColumn
@@ -198,7 +212,7 @@ export function FacilityView({
               />
             ))}
           </div>
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">EAST</div>
+          {!isSaturday && <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">EAST</div>}
         </div>
 
         {/* Mobile: belt tabs */}

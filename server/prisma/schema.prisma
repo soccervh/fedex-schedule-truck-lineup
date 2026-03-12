@@ -176,6 +176,7 @@ model FacilityArea {
   id       Int            @id @default(autoincrement())
   name     String         // "UNLOAD", "DOC"
   subArea  String?        // "Secondary", "Quarterback", "Fine Sort", "Ramp", etc.
+  schedule String         @default("WEEKDAY") // "WEEKDAY" or "SATURDAY"
   spots    FacilitySpot[]
 }
 

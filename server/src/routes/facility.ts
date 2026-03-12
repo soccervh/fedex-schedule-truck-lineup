@@ -15,8 +15,11 @@ router.get('/areas', authenticate, async (req, res) => {
     }
 
     const targetDate = new Date(date as string);
+    const dayOfWeek = targetDate.getUTCDay();
+    const areaSchedule = dayOfWeek === 6 ? 'SATURDAY' : 'WEEKDAY';
 
     const facilityAreas = await prisma.facilityArea.findMany({
+      where: { schedule: areaSchedule },
       include: {
         spots: {
           orderBy: { number: 'asc' },
@@ -179,11 +182,17 @@ router.get('/route-assignments', authenticate, async (req, res) => {
 
     const dayOfWeek = targetDate.getUTCDay();
 
+    const allowedSchedules = getAllowedSchedules(dayOfWeek);
+    const routeWhere: any = {
+      isActive: true,
+      loadLocation: { not: null },
+    };
+    if (allowedSchedules) {
+      routeWhere.schedule = { in: allowedSchedules };
+    }
+
     const routes = await prisma.route.findMany({
-      where: {
-        isActive: true,
-        loadLocation: { not: null },
-      },
+      where: routeWhere,
       include: {
         facilitySpot: {
           include: {

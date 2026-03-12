@@ -103,7 +103,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
               },
             },
             routes: {
-              where: { isActive: true },
+              where: routeWhere,
               select: {
                 id: true, number: true, loadLocation: true, schedule: true,
                 driverId: true,
