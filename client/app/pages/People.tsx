@@ -35,6 +35,7 @@ export default function People() {
   const [searchQuery, setSearchQuery] = useState('');
   const [role, setRole] = useQueryState('role', { defaultValue: '' });
   const [accessLevelFilter, setAccessLevelFilter] = useQueryState('accessLevel', { defaultValue: '' });
+  const [managerFilter, setManagerFilter] = useQueryState('manager', { defaultValue: '' });
   const [selectedDate, setSelectedDate] = useState(todayET());
 
   const { data: people, isLoading } = useQuery({
@@ -169,6 +170,7 @@ export default function People() {
     if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (role && p.role !== role) return false;
     if (accessLevelFilter && p.accessLevel !== accessLevelFilter) return false;
+    if (managerFilter && p.managerId !== managerFilter) return false;
     return true;
   });
 
@@ -240,6 +242,21 @@ export default function People() {
           <option value="TRUCK_MOVER">Truck Mover</option>
           <option value="EMPLOYEE">Employee</option>
         </select>
+        {canViewDetails && (
+          <select
+            value={managerFilter}
+            onChange={(e) => setManagerFilter(e.target.value)}
+            className="px-2 py-1.5 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+          >
+            <option value="">All Managers</option>
+            {people
+              ?.filter((p: any) => p.role === 'MANAGER')
+              .sort((a: any, b: any) => a.name.localeCompare(b.name))
+              .map((m: any) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+          </select>
+        )}
       </div>
 
       {isLoading ? (
