@@ -4,15 +4,34 @@ import { prisma } from '../lib/prisma';
 
 const router = Router();
 
+// Helper: get weekday dates for a given date's work week (Mon-Fri)
+function getWeekDates(date: Date): Date[] {
+  const dates: Date[] = [];
+  const day = date.getUTCDay();
+  // Find Monday of this week
+  const monday = new Date(date);
+  monday.setUTCDate(monday.getUTCDate() - ((day + 6) % 7));
+  // Mon through Sat (0=Mon to 5=Sat)
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    if (d >= date) { // only remaining days from the selected date onward
+      dates.push(d);
+    }
+  }
+  return dates;
+}
+
 // Create or update assignment
 router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRequest, res) => {
   try {
-    const { spotId, userId, date, truckNumber } = req.body;
+    const { spotId, userId, date, truckNumber, duration } = req.body;
 
     if (!spotId || !userId || !date) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    const effectiveDuration = duration || 'TODAY';
     const targetDate = new Date(date);
 
     // Check if there's a template assignment for this spot/day
@@ -30,34 +49,75 @@ router.post('/', authenticate, requireAccessLevel('OP_LEAD'), async (req: AuthRe
         templateAssignment.truckNumber !== effectiveTruckNumber
       : false;
 
-    const assignment = await prisma.assignment.upsert({
-      where: {
-        spotId_date: { spotId, date: targetDate },
-      },
-      update: {
-        userId,
-        truckNumber: effectiveTruckNumber,
-        isOverride,
-      },
-      create: {
-        spotId,
-        userId,
-        date: targetDate,
-        truckNumber: effectiveTruckNumber,
-        isOverride,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
+    // Determine which dates to create assignments for
+    let dates: Date[] = [targetDate];
+    if (effectiveDuration === 'WEEK') {
+      dates = getWeekDates(targetDate);
+    }
+
+    let result;
+    for (const d of dates) {
+      result = await prisma.assignment.upsert({
+        where: {
+          spotId_date: { spotId, date: d },
+        },
+        update: {
+          userId,
+          truckNumber: effectiveTruckNumber,
+          isOverride,
+          duration: effectiveDuration,
+        },
+        create: {
+          spotId,
+          userId,
+          date: d,
+          truckNumber: effectiveTruckNumber,
+          isOverride,
+          duration: effectiveDuration,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
           },
         },
-      },
-    });
+      });
+    }
 
-    res.json(assignment);
+    // For UNTIL_FILLED, also create assignments for next 4 weeks
+    if (effectiveDuration === 'UNTIL_FILLED') {
+      for (let week = 1; week <= 4; week++) {
+        for (let dayOffset = 1; dayOffset <= 5; dayOffset++) {
+          const futureDate = new Date(targetDate);
+          futureDate.setUTCDate(futureDate.getUTCDate() + (week * 7) + dayOffset - targetDate.getUTCDay());
+          if (futureDate.getUTCDay() === 0) continue; // skip Sunday
+          await prisma.assignment.upsert({
+            where: {
+              spotId_date: { spotId, date: futureDate },
+            },
+            update: {
+              userId,
+              truckNumber: effectiveTruckNumber,
+              isOverride,
+              duration: effectiveDuration,
+            },
+            create: {
+              spotId,
+              userId,
+              date: futureDate,
+              truckNumber: effectiveTruckNumber,
+              isOverride,
+              duration: effectiveDuration,
+            },
+          });
+        }
+      }
+    }
+
+    res.json(result);
   } catch (error) {
     console.error('Create assignment error:', error);
     res.status(500).json({ error: 'Failed to create assignment' });

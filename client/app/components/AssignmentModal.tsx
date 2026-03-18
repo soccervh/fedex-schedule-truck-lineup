@@ -11,6 +11,7 @@ interface Spot {
   assignment: {
     id: string;
     truckNumber: string;
+    duration?: string;
     user: {
       id: string;
       name: string;
@@ -34,9 +35,11 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
   const [selectedUserId, setSelectedUserId] = useState(
     spot.assignment?.user.id || ''
   );
+  const [duration, setDuration] = useState<string>(spot.assignment?.duration || 'TODAY');
   const [routeSaved, setRouteSaved] = useState(false);
   const [areaSaved, setAreaSaved] = useState(false);
   const [pullerSaved, setPullerSaved] = useState(false);
+  const [personSaved, setPersonSaved] = useState(false);
 
   const { data: people } = useQuery({
     queryKey: ['people'],
@@ -71,7 +74,7 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (data: { spotId: number; userId: string; date: string }) => {
+    mutationFn: async (data: { spotId: number; userId: string; date: string; duration: string }) => {
       return api.post('/assignments', data);
     },
     onSuccess: () => {
@@ -79,7 +82,8 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
       queryClient.invalidateQueries({ queryKey: ['coverage'] });
       queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
-      onClose();
+      setPersonSaved(true);
+      setTimeout(() => setPersonSaved(false), 2000);
     },
   });
 
@@ -92,7 +96,9 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
       queryClient.invalidateQueries({ queryKey: ['all-belts'] });
       queryClient.invalidateQueries({ queryKey: ['coverage'] });
       queryClient.invalidateQueries({ queryKey: ['facility-route-assignments'] });
-      onClose();
+      setSelectedUserId('');
+      setPersonSaved(true);
+      setTimeout(() => setPersonSaved(false), 2000);
     },
   });
 
@@ -166,20 +172,30 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
     markSickMutation.mutate({ userId: spot.assignment.user.id, date });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUserId) return;
-
+  const autoSaveAssignment = (userId: string, dur: string) => {
+    if (!userId) {
+      if (spot.assignment) {
+        deleteMutation.mutate(spot.assignment.id);
+      }
+      return;
+    }
     assignMutation.mutate({
       spotId: spot.id,
-      userId: selectedUserId,
+      userId,
       date,
+      duration: dur,
     });
   };
 
-  const handleDelete = () => {
-    if (spot.assignment) {
-      deleteMutation.mutate(spot.assignment.id);
+  const handlePersonChange = (userId: string) => {
+    setSelectedUserId(userId);
+    autoSaveAssignment(userId, duration);
+  };
+
+  const handleDurationChange = (dur: string) => {
+    setDuration(dur);
+    if (selectedUserId) {
+      autoSaveAssignment(selectedUserId, dur);
     }
   };
 
@@ -349,70 +365,77 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
             Change Truck
           </button>
 
-          {/* Person Assignment Section - optional */}
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Person Assignment (Today Only)</span>
-            <p className="text-xs text-gray-400 dark:text-gray-500">This assigns someone for today only. Use the People page to set a permanent route assignment.</p>
+          {/* Person Assignment Section - auto-saves */}
+          <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Person Assignment</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {personSaved ? <span className="text-green-600 inline-flex items-center gap-0.5"><Check size={12} /> Saved</span> : 'Changes save automatically'}
+              </span>
+            </div>
 
             {spot.assignment?.needsCoverage && (
-              <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
-                <strong>{spot.assignment.user.name}</strong> is off. Select a
-                swing driver for coverage.
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded p-3 text-sm dark:text-red-200">
+                <strong>{spot.assignment.user.name}</strong> is off. Select a swing driver for coverage.
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {spot.assignment?.needsCoverage ? 'Swing Driver' : 'Assign Person'}
-                </label>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
-                >
-                  <option value="">No person assigned</option>
-                  {spot.assignment?.needsCoverage ? (
-                    swingDrivers
-                      ?.slice()
-                      .sort((a: any, b: any) => (a.assignedSpot ? 1 : 0) - (b.assignedSpot ? 1 : 0))
-                      .map((driver: any) => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.name}{driver.assignedSpot ? ` (covering ${driver.assignedSpot})` : ''}
-                      </option>
-                    ))
-                  ) : (
-                    people?.map((person: any) => (
-                      <option key={person.id} value={person.id}>
-                        {person.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {spot.assignment?.needsCoverage ? 'Swing Driver' : 'Assign Person'}
+              </label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => handlePersonChange(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                disabled={assignMutation.isPending || deleteMutation.isPending}
+              >
+                <option value="">No person assigned</option>
+                {spot.assignment?.needsCoverage ? (
+                  swingDrivers
+                    ?.slice()
+                    .sort((a: any, b: any) => (a.assignedSpot ? 1 : 0) - (b.assignedSpot ? 1 : 0))
+                    .map((driver: any) => (
+                    <option key={driver.id} value={driver.id}>
+                      {driver.name}{driver.assignedSpot ? ` (covering ${driver.assignedSpot})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  people?.map((person: any) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
 
-              {selectedUserId && (
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={assignMutation.isPending}
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {assignMutation.isPending ? 'Saving...' : 'Assign Person'}
-                  </button>
+            {selectedUserId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                <div className="flex gap-1">
+                  {[
+                    { value: 'TODAY', label: 'Today' },
+                    { value: 'WEEK', label: 'This Week' },
+                    { value: 'UNTIL_FILLED', label: 'Until Route Assigned' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleDurationChange(opt.value)}
+                      disabled={assignMutation.isPending}
+                      className={`flex-1 px-2 py-1.5 text-xs rounded-md border transition-colors ${
+                        duration === opt.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-500'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-              {spot.assignment && !spot.assignment.needsCoverage && (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                  className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50"
-                >
-                  Remove Person
-                </button>
-              )}
-            </form>
+              </div>
+            )}
           </div>
 
           {/* Done Button */}

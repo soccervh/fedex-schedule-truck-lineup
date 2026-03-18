@@ -185,6 +185,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
             id: assignment.id,
             truckNumber: assignment.truckNumber,
             isOverride: assignment.isOverride,
+            duration: assignment.duration || 'TODAY',
             user: assignment.user,
             needsCoverage: isOff,
           };
@@ -194,6 +195,7 @@ router.get('/all/assignments', authenticate, async (req, res) => {
             id: `route-driver-${route.id}`,
             truckNumber: '',
             isOverride: false,
+            duration: 'TODAY',
             user: { id: route.driver.id, name: route.driver.name, role: route.driver.role },
             needsCoverage: isOff,
           };

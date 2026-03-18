@@ -150,6 +150,7 @@ model Assignment {
   date        DateTime  @db.Date
   truckNumber String
   isOverride  Boolean   @default(false)
+  duration    String    @default("TODAY")  // TODAY, WEEK, UNTIL_FILLED
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
