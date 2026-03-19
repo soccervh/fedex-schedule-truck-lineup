@@ -52,7 +52,7 @@ router.post('/mandates', authenticate, requireAccessLevel('OP_LEAD'), async (req
 // Delete mandate (OP_LEAD+)
 router.delete('/mandates/:id', authenticate, requireAccessLevel('OP_LEAD'), async (req, res) => {
   try {
-    await prisma.mandate.delete({ where: { id: req.params.id } });
+    await prisma.mandate.delete({ where: { id: req.params.id as string } });
     res.status(204).send();
   } catch (error) {
     console.error('Delete mandate error:', error);
@@ -91,7 +91,7 @@ router.post('/volunteers', authenticate, async (req: AuthRequest, res) => {
 
     // Only OP_LEAD+ can volunteer someone else
     if (targetUserId !== req.user!.userId) {
-      const isManager = ['HIGHEST_MANAGER', 'OP_LEAD'].includes(req.user!.accessLevel);
+      const isManager = ['HIGHEST_MANAGER', 'OP_LEAD'].includes(req.user!.accessLevel as string);
       if (!isManager) return res.status(403).json({ error: 'Cannot volunteer someone else' });
     }
 
@@ -114,14 +114,14 @@ router.post('/volunteers', authenticate, async (req: AuthRequest, res) => {
 // Delete volunteer (own or OP_LEAD+)
 router.delete('/volunteers/:id', authenticate, async (req: AuthRequest, res) => {
   try {
-    const volunteer = await prisma.volunteer.findUnique({ where: { id: req.params.id } });
+    const volunteer = await prisma.volunteer.findUnique({ where: { id: req.params.id as string } });
     if (!volunteer) return res.status(404).json({ error: 'Not found' });
 
     const isOwn = volunteer.userId === req.user!.userId;
-    const isManager = ['HIGHEST_MANAGER', 'OP_LEAD'].includes(req.user!.accessLevel);
+    const isManager = ['HIGHEST_MANAGER', 'OP_LEAD'].includes(req.user!.accessLevel as string);
     if (!isOwn && !isManager) return res.status(403).json({ error: 'Not authorized' });
 
-    await prisma.volunteer.delete({ where: { id: req.params.id } });
+    await prisma.volunteer.delete({ where: { id: req.params.id as string } });
     res.status(204).send();
   } catch (error) {
     console.error('Delete volunteer error:', error);
