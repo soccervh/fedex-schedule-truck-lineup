@@ -8,6 +8,7 @@ import { FacilityView } from '../components/FacilityView';
 import { BeltDetailView } from '../components/BeltDetailView';
 import { NeedsFillSidebar } from '../components/NeedsFillSidebar';
 import { SwingDriversSidebar } from '../components/SwingDriversSidebar';
+import { ExtrasSidebar } from '../components/ExtrasSidebar';
 import { AssignmentModal } from '../components/AssignmentModal';
 import { FacilityAssignmentModal } from '../components/FacilityAssignmentModal';
 import { StartTimesModal } from '../components/StartTimesModal';
@@ -15,7 +16,8 @@ import { Settings } from 'lucide-react';
 import type { Belt, BeltSpot, FacilityArea, FacilitySpot, SwingDriver, RouteAssignments } from '../types/lineup';
 
 export default function FacilityPage() {
-  const { isManager } = useAuth();
+  const { isManager, user, hasAccess } = useAuth();
+  const isOpLead = hasAccess('OP_LEAD');
   const [selectedDate, setSelectedDate] = useQueryState('date', {
     defaultValue: todayET(),
   });
@@ -72,6 +74,31 @@ export default function FacilityPage() {
       const res = await api.get('/facility/start-times');
       return res.data;
     },
+  });
+
+  const { data: mandatesData } = useQuery({
+    queryKey: ['mandates', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/extras/mandates?date=${selectedDate}`);
+      return res.data;
+    },
+  });
+
+  const { data: volunteersData } = useQuery({
+    queryKey: ['volunteers', selectedDate],
+    queryFn: async () => {
+      const res = await api.get(`/extras/volunteers?date=${selectedDate}`);
+      return res.data;
+    },
+  });
+
+  const { data: peopleData } = useQuery({
+    queryKey: ['people'],
+    queryFn: async () => {
+      const res = await api.get('/people');
+      return res.data;
+    },
+    enabled: isOpLead,
   });
 
   const handleBeltSpotClick = (spot: BeltSpot, beltId: number) => {
@@ -216,6 +243,14 @@ export default function FacilityPage() {
           <SwingDriversSidebar
             swingDrivers={swingDriversData || []}
             routeAssignments={routeAssignmentsData}
+          />
+          <ExtrasSidebar
+            mandates={mandatesData || []}
+            volunteers={volunteersData || []}
+            selectedDate={selectedDate}
+            isManager={isOpLead}
+            currentUserId={user?.userId}
+            people={peopleData}
           />
           <NeedsFillSidebar
             coverageNeeds={coverageData?.needsCoverage || []}

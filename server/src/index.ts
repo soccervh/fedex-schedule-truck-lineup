@@ -15,6 +15,7 @@ import spotRoutes from './routes/spots';
 import routeRoutes from './routes/routes';
 import briefingRoutes from './routes/briefing';
 import inviteRoutes from './routes/invites';
+import extrasRoutes from './routes/extras';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -41,6 +42,7 @@ app.use('/api/spots', spotRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/briefing', briefingRoutes);
 app.use('/api/invites', inviteRoutes);
+app.use('/api/extras', extrasRoutes);
 
 // In production, serve the built client as static files
 if (process.env.NODE_ENV === 'production') {
