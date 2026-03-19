@@ -282,10 +282,19 @@ router.get('/route-assignments', authenticate, async (req, res) => {
 
       const section = getSection(route.loadLocation!);
       if (!section) continue;
+      // Build a label for the facility spot (e.g. "FO2", "U3")
+      let facilitySpotLabel: string | null = null;
+      if (route.facilitySpot) {
+        const area = route.facilitySpot.area;
+        const prefix = area.name === 'UNLOAD' ? 'U' : area.name === 'FO' ? 'FO' : area.name === 'SORT' ? 'S' : '';
+        facilitySpotLabel = route.facilitySpot.label || `${prefix}${route.facilitySpot.number}`;
+      }
+
       result[section].push({
         id: route.id,
         number: route.number,
         facilitySpotId: route.facilitySpotId,
+        facilitySpotLabel,
         driver,
         driverIsOff,
       });

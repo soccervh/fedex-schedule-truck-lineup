@@ -23,6 +23,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         email: isHighAccess ? true : false,
         role: true,
         workSchedule: true,
+        shift: true,
         phone: isHighAccess ? true : false,
         accessLevel: isHighAccess ? true : false,
         isSuspended: isHighAccess ? true : false,

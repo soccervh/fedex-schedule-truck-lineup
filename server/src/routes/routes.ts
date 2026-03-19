@@ -109,6 +109,9 @@ router.get('/by-spot/:spotId', authenticate, async (req, res) => {
     const spotId = parseInt(req.params.spotId as string);
     const routes = await prisma.route.findMany({
       where: { beltSpotId: spotId, isActive: true },
+      include: {
+        driver: { select: { id: true, name: true } },
+      },
       orderBy: { number: 'asc' },
     });
     res.json(routes);

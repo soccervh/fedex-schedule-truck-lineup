@@ -23,6 +23,7 @@ interface RouteAssignment {
   id: number;
   number: string;
   facilitySpotId: number | null;
+  facilitySpotLabel?: string | null;
   driver: { id: string; name: string } | null;
   driverIsOff: boolean;
 }
@@ -136,7 +137,9 @@ export function FacilityAssignmentModal({ spot, sectionName, routes, onClose }: 
                           {route.driver ? formatName(route.driver.name) : '—'}
                         </span>
                         {atOtherSpot && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">(assigned elsewhere)</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                            (at {route.facilitySpotLabel || 'another spot'})
+                          </span>
                         )}
                       </div>
                       <span className="text-xs text-blue-600 font-medium">Assign</span>

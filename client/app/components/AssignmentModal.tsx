@@ -400,13 +400,42 @@ export function AssignmentModal({ spot, beltId, beltLetter, baseNumber, date, on
                       {driver.name}{driver.assignedSpot ? ` (covering ${driver.assignedSpot})` : ''}
                     </option>
                   ))
-                ) : (
-                  people?.map((person: any) => (
-                    <option key={person.id} value={person.id}>
-                      {person.name}
-                    </option>
-                  ))
-                )}
+                ) : (() => {
+                  const routeDriver = spotRoutes?.[0]?.driver;
+                  const swings = people?.filter((p: any) => p.role === 'SWING') || [];
+                  const amDrivers = people?.filter((p: any) => p.role !== 'SWING' && p.role !== 'MANAGER' && p.shift === 'AM' && p.id !== routeDriver?.id) || [];
+                  const pmDrivers = people?.filter((p: any) => p.role !== 'SWING' && p.role !== 'MANAGER' && p.shift === 'PM' && p.id !== routeDriver?.id) || [];
+                  return (
+                    <>
+                      {routeDriver && (
+                        <optgroup label="Route Driver">
+                          <option value={routeDriver.id}>{routeDriver.name}</option>
+                        </optgroup>
+                      )}
+                      {swings.length > 0 && (
+                        <optgroup label="Swing Drivers">
+                          {swings.map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {amDrivers.length > 0 && (
+                        <optgroup label="AM Drivers">
+                          {amDrivers.map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {pmDrivers.length > 0 && (
+                        <optgroup label="PM Drivers">
+                          {pmDrivers.map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </>
+                  );
+                })()}
               </select>
             </div>
 
